@@ -1,16 +1,37 @@
-import { useListSocialAccounts, useListWorkspaces } from "@workspace/api-client-react";
+import { useListSocialAccounts, useListWorkspaces, useDisconnectSocialAccount } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Share2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function Accounts() {
+  const queryClient = useQueryClient();
   const { data: workspaces } = useListWorkspaces();
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: accounts, isLoading } = useListSocialAccounts(workspaceId!, {
     query: { enabled: !!workspaceId }
   });
+
+  const disconnectMutation = useDisconnectSocialAccount({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/workspaces/${workspaceId}/social-accounts`]
+        });
+      },
+      onError: (err: any) => {
+        alert(err.message || "Failed to disconnect social account");
+      }
+    }
+  });
+
+  const handleDisconnect = (accountId: number) => {
+    if (confirm("Are you sure you want to disconnect this social account?")) {
+      disconnectMutation.mutate({ workspaceId: workspaceId!, id: accountId });
+    }
+  };
 
   const platforms = [
     { id: 'facebook', name: 'Facebook Page' },
@@ -80,7 +101,7 @@ export function Accounts() {
                       <span className="text-muted-foreground">Followers / Subs</span>
                       <span className="font-medium">{connected.followersCount?.toLocaleString() || 0}</span>
                     </div>
-                    <Button variant="destructive" className="w-full">Disconnect</Button>
+                    <Button variant="destructive" onClick={() => handleDisconnect(connected.id)} disabled={disconnectMutation.isPending} className="w-full">Disconnect</Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
