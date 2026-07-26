@@ -2,30 +2,7 @@ import { Router, type IRouter } from "express";
 import { mediaFilesTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 import { ListMediaParams, UploadMediaParams, UploadMediaBody, DeleteMediaParams } from "@workspace/api-zod";
-import fs from "fs";
-import path from "path";
-
-// Native .env file loader helper
-function loadEnv() {
-  const envPath = path.resolve(process.cwd(), ".env");
-  if (fs.existsSync(envPath)) {
-    const lines = fs.readFileSync(envPath, "utf8").split("\n");
-    for (const line of lines) {
-      const match = line.trim().match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-      if (match) {
-        const key = match[1];
-        let val = match[2] || "";
-        if (val.startsWith('"') && val.endsWith('"')) {
-          val = val.substring(1, val.length - 1);
-        } else if (val.startsWith("'") && val.endsWith("'")) {
-          val = val.substring(1, val.length - 1);
-        }
-        process.env[key] = val;
-      }
-    }
-  }
-}
-loadEnv();
+import "../lib/env-loader";
 
 const router: IRouter = Router();
 
@@ -62,7 +39,7 @@ router.post("/workspaces/:workspaceId/media", requireAuth, async (req: Authentic
     const formData = new FormData();
     formData.append("file", base64Data);
     formData.append("fileName", parsed.data.filename || "upload");
-    formData.append("folder", "/Social Media Automation");
+    formData.append("folder", process.env.IMAGEKIT_FOLDER || "/Social Media Automation");
     formData.append("useUniqueFileName", "true");
 
     console.log("Uploading file to ImageKit...");
