@@ -12,11 +12,16 @@ export function AdminPlatforms() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = React.useState<"social" | "ai" | "saas">("social");
 
+  const getApiUrl = (urlPath: string) => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    return `${baseUrl.replace(/\/+$/, "")}${urlPath}`;
+  };
+
   // Fetch social platform configs
   const { data: platforms, isLoading: isSocialsLoading } = useQuery({
     queryKey: ["adminSocialsConfigs"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/platform-configs", {
+      const res = await fetch(getApiUrl("/api/admin/platform-configs"), {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
         }
@@ -30,7 +35,7 @@ export function AdminPlatforms() {
   const { data: integrations, isLoading: isIntegrationsLoading } = useQuery({
     queryKey: ["adminIntegrationsConfigs"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/integrations", {
+      const res = await fetch(getApiUrl("/api/admin/integrations"), {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
         }
@@ -43,7 +48,7 @@ export function AdminPlatforms() {
   // Save Social Platform Mutation
   const saveSocialMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await fetch(`/api/admin/platform-configs`, {
+      const res = await fetch(getApiUrl("/api/admin/platform-configs"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -63,7 +68,7 @@ export function AdminPlatforms() {
   // Save AI/SaaS Integration Mutation
   const saveIntegrationMutation = useMutation({
     mutationFn: async ({ provider, category, isEnabled, config }: any) => {
-      const res = await fetch(`/api/admin/integrations/${provider}`, {
+      const res = await fetch(getApiUrl(`/api/admin/integrations/${provider}`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
