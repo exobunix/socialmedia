@@ -44,10 +44,15 @@ export function Accounts() {
     { id: 'threads', name: 'Threads' }
   ];
 
+  const getApiUrl = (urlPath: string) => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    return `${baseUrl.replace(/\/+$/, "")}${urlPath}`;
+  };
+
   const handleConnect = async (platformId: string) => {
     if (platformId === "youtube") {
       try {
-        const res = await fetch(`/api/oauth/connect/youtube?workspaceId=${workspaceId}`, {
+        const res = await fetch(getApiUrl(`/api/oauth/connect/youtube?workspaceId=${workspaceId}`), {
           headers: {
             "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
           }
