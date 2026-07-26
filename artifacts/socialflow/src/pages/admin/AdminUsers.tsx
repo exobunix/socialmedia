@@ -13,11 +13,16 @@ export function AdminUsers() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedUser, setSelectedUser] = React.useState<any | null>(null);
 
+  const getApiUrl = (urlPath: string) => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    return `${baseUrl.replace(/\/+$/, "")}${urlPath}`;
+  };
+
   // Fetch users list
   const { data: usersData, isLoading, refetch } = useQuery({
     queryKey: ["adminUsersList"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/users?limit=100", {
+      const res = await fetch(getApiUrl("/api/admin/users?limit=100"), {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
         }
@@ -31,7 +36,7 @@ export function AdminUsers() {
   const { data: userActivity, isLoading: isActivityLoading } = useQuery({
     queryKey: ["adminUserActivity", selectedUser?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/users/${selectedUser.id}/activity`, {
+      const res = await fetch(getApiUrl(`/api/admin/users/${selectedUser.id}/activity`), {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
         }
@@ -45,7 +50,7 @@ export function AdminUsers() {
   // Mutation to toggle suspension or update user details
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, status, role }: { id: number; status?: string; role?: string }) => {
-      const res = await fetch(`/api/admin/users/${id}`, {
+      const res = await fetch(getApiUrl(`/api/admin/users/${id}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -65,7 +70,7 @@ export function AdminUsers() {
   // Impersonate mutation
   const impersonateMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`/api/admin/users/${id}/impersonate`, {
+      const res = await fetch(getApiUrl(`/api/admin/users/${id}/impersonate`), {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`

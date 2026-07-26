@@ -10,13 +10,18 @@ export function Posts() {
   const { data: workspaces } = useListWorkspaces();
   const workspaceId = workspaces?.[0]?.id;
   
+  const getApiUrl = (urlPath: string) => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    return `${baseUrl.replace(/\/+$/, "")}${urlPath}`;
+  };
+
   const { data: postsData, isLoading } = useListPosts(workspaceId!, {
     query: { enabled: !!workspaceId }
   });
 
   const handlePublishNow = async (postId: number) => {
     try {
-      const res = await fetch(`/api/workspaces/${workspaceId}/posts/${postId}/publish`, {
+      const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/posts/${postId}/publish`), {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`

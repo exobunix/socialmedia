@@ -14,11 +14,16 @@ import {
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = React.useState<"overview" | "finance" | "server" | "queues">("overview");
 
+  const getApiUrl = (urlPath: string) => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    return `${baseUrl.replace(/\/+$/, "")}${urlPath}`;
+  };
+
   // Fetch detailed admin statistics
   const { data: stats, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["adminStatsDetailed"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/stats/detailed", {
+      const res = await fetch(getApiUrl("/api/admin/stats/detailed"), {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
         }
@@ -31,7 +36,7 @@ export function AdminDashboard() {
   // Backup mutation
   const triggerBackup = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/admin/backups/trigger", {
+      const res = await fetch(getApiUrl("/api/admin/backups/trigger"), {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
@@ -48,7 +53,7 @@ export function AdminDashboard() {
   // Queue actions mutation
   const triggerQueueAction = useMutation({
     mutationFn: async ({ queue, action }: { queue: string; action: string }) => {
-      const res = await fetch(`/api/admin/queues/${queue}/action`, {
+      const res = await fetch(getApiUrl(`/api/admin/queues/${queue}/action`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

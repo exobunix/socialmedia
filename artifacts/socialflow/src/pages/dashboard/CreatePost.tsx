@@ -22,6 +22,11 @@ export function CreatePost() {
   const workspaceId = workspaces?.[0]?.id;
   const createPost = useCreatePost();
 
+  const getApiUrl = (urlPath: string) => {
+    const baseUrl = import.meta.env.VITE_API_URL || "";
+    return `${baseUrl.replace(/\/+$/, "")}${urlPath}`;
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState("");
   const [tone, setTone] = useState("professional");
@@ -59,7 +64,7 @@ export function CreatePost() {
         const type = file.type.startsWith("video/") ? "video" : "image";
 
         // Register upload metadata and data URL on backend
-        const res = await fetch(`/api/workspaces/${workspaceId}/media`, {
+        const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/media`), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
