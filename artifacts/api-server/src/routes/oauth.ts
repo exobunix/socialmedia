@@ -103,24 +103,36 @@ router.get("/auth/google/callback", async (req, res): Promise<void> => {
     const profileImageUrl = channel.snippet.thumbnails?.default?.url || "";
     const subscribers = Number(channel.statistics?.subscriberCount ?? 0);
 
-    // Save account to MongoDB
-    await socialAccountsTable.findOneAndUpdate(
-      { platform: "youtube", platformUserId, workspaceId },
-      {
-        $set: {
-          username,
-          displayName,
-          profileImageUrl,
-          accessToken,
-          ...(refreshToken ? { refreshToken } : {}), // Keep existing if not returned by Google
-          followersCount: subscribers
-        }
-      },
-      { upsert: true, new: true }
-    );
+    // Save account to MongoDB using save/create to trigger pre-save hooks
+    let account = await socialAccountsTable.findOne({ platform: "youtube", platformUserId, workspaceId });
+    if (account) {
+      account.username = username;
+      account.displayName = displayName;
+      account.profileImageUrl = profileImageUrl;
+      account.accessToken = accessToken;
+      if (refreshToken) {
+        account.refreshToken = refreshToken;
+      }
+      account.followersCount = subscribers;
+      await account.save();
+    } else {
+      await socialAccountsTable.create({
+        workspaceId,
+        platform: "youtube",
+        platformUserId,
+        username,
+        displayName,
+        profileImageUrl,
+        accessToken,
+        refreshToken,
+        followersCount: subscribers,
+        status: "active"
+      });
+    }
 
-    // Redirect user back to frontend accounts page
-    res.redirect("http://localhost:3000/accounts?success=youtube");
+    // Redirect user back to frontend accounts page (using dynamic FRONTEND_URL or fallback to live URL)
+    const frontendUrl = process.env.FRONTEND_URL || "https://socialmedia-socialflow.vercel.app";
+    res.redirect(`${frontendUrl.replace(/\/+$/, "")}/accounts?success=youtube`);
   } catch (error: any) {
     console.error("YouTube OAuth Error:", error);
     res.status(500).send(`Authentication failed: ${error.message}`);
