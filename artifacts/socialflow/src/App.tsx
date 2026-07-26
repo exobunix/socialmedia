@@ -42,6 +42,13 @@ import { ContactPage } from "./pages/ContactPage";
 
 // Auth Setup
 import "./lib/auth";
+import { setBaseUrl } from "@workspace/api-client-react";
+
+// Initialize base API URL from environment variables for production deployments (Vercel -> Render)
+const apiBaseUrl = import.meta.env.VITE_API_URL || "";
+if (apiBaseUrl) {
+  setBaseUrl(apiBaseUrl);
+}
 
 const queryClient = new QueryClient();
 
