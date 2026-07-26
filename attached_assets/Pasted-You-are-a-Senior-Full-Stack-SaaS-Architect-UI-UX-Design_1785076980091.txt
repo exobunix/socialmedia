@@ -1,0 +1,954 @@
+You are a Senior Full Stack SaaS Architect, UI/UX Designer, DevOps Engineer and AI Engineer.
+
+Build a complete production-ready SaaS platform called
+
+SOCIALFLOW AI
+(Brand Name can be changed later)
+
+Goal:
+Build a platform similar to Buffer + Hootsuite + Later + GravityWrite Social + Metricool + Canva AI + ChatGPT.
+
+This is a multi-tenant SaaS where any user from anywhere in the world can register, subscribe to a plan, connect their own social media accounts through OAuth and automate their complete social media workflow.
+
+====================================================
+
+PRIMARY TAGLINE
+
+Get Your Social Media Automated in a Few Clicks.
+
+AI Powered.
+Content Creation.
+Scheduling.
+Publishing.
+Analytics.
+
+====================================================
+
+Design Requirements
+
+Modern
+Premium
+Minimal
+Very Fast
+
+Use
+
+React
+Next.js
+Tailwind CSS
+Shadcn UI
+Framer Motion
+
+Animations should be smooth.
+
+Use dark/light mode.
+
+Responsive for
+
+Desktop
+Tablet
+Mobile
+
+====================================================
+
+Landing Page
+
+Create a premium landing page.
+
+Hero Section
+
+Heading
+
+Get Your Social Media Automated in a Few Clicks
+
+Subheading
+
+Create AI Content, Generate Images, Create Reels, Schedule Posts, Publish Everywhere and Grow Your Business Automatically.
+
+Buttons
+
+Start Free Trial
+
+Watch Demo
+
+Hero image
+
+Beautiful dashboard preview.
+
+====================================================
+
+Trusted Companies Section
+
+Scrolling logos
+
+Facebook
+
+Instagram
+
+LinkedIn
+
+Pinterest
+
+TikTok
+
+YouTube
+
+Threads
+
+X
+
+====================================================
+
+Features Section
+
+AI Caption Generator
+
+AI Reel Script Generator
+
+AI Image Generator
+
+AI Carousel Generator
+
+AI Hashtag Generator
+
+AI Post Rewriter
+
+AI Content Calendar
+
+One Click Publishing
+
+Bulk Scheduling
+
+Smart Analytics
+
+Content Library
+
+Brand Kit
+
+Team Collaboration
+
+Approval Workflow
+
+Unlimited Social Accounts
+
+====================================================
+
+Pricing Section
+
+Provide 4 plans.
+
+FREE
+
+₹0
+
+2 Social Accounts
+
+20 Scheduled Posts
+
+Basic AI
+
+5 AI Images
+
+Basic Analytics
+
+----------------------------------------------------
+
+STARTER
+
+₹999/month
+
+10 Social Accounts
+
+Unlimited Scheduling
+
+Unlimited AI Captions
+
+100 AI Images
+
+Reels Generator
+
+Analytics
+
+Email Support
+
+----------------------------------------------------
+
+PRO
+
+₹2499/month
+
+Unlimited Accounts
+
+Unlimited AI
+
+Unlimited Scheduling
+
+Content Calendar
+
+AI Reel Generator
+
+AI Image Generator
+
+Advanced Analytics
+
+Priority Support
+
+Team Members
+
+----------------------------------------------------
+
+AGENCY
+
+₹5999/month
+
+Unlimited Clients
+
+Unlimited Accounts
+
+Unlimited AI
+
+White Label
+
+Custom Branding
+
+Approval Workflow
+
+Dedicated Support
+
+API Access
+
+====================================================
+
+Footer
+
+Privacy Policy
+
+Terms
+
+Refund Policy
+
+Contact
+
+About
+
+Blogs
+
+Documentation
+
+====================================================
+
+AUTHENTICATION
+
+Email Password
+
+Google Login
+
+Forgot Password
+
+OTP Verification
+
+Two Factor Authentication
+
+====================================================
+
+USER DASHBOARD
+
+Modern Sidebar
+
+Dashboard
+
+Social Accounts
+
+Create Content
+
+AI Studio
+
+Image Generator
+
+Video Generator
+
+Posts
+
+Calendar
+
+Templates
+
+Media Library
+
+Analytics
+
+Billing
+
+Settings
+
+Help
+
+====================================================
+
+SOCIAL ACCOUNT CONNECTION
+
+Allow user to connect
+
+Facebook
+
+Instagram
+
+LinkedIn
+
+Pinterest
+
+X
+
+YouTube
+
+Threads
+
+TikTok
+
+Google Business
+
+WordPress
+
+Medium
+
+Each connection must use OAuth.
+
+Store
+
+Access Token
+
+Refresh Token
+
+Expiry
+
+Platform User ID
+
+Encrypted in database.
+
+====================================================
+
+CREATE CONTENT
+
+Rich Editor
+
+Upload Images
+
+Upload Videos
+
+Upload PDFs
+
+Drag Drop
+
+Emoji
+
+Hashtags
+
+Mentions
+
+AI Rewrite
+
+AI Improve
+
+AI Translate
+
+Tone Selection
+
+Professional
+
+Funny
+
+Marketing
+
+Corporate
+
+Friendly
+
+====================================================
+
+AI GENERATION
+
+OpenAI
+
+Gemini
+
+Claude
+
+DeepSeek
+
+Allow admin to configure AI providers.
+
+Generate
+
+Instagram captions
+
+Facebook posts
+
+LinkedIn articles
+
+Twitter threads
+
+Pinterest descriptions
+
+YouTube titles
+
+Descriptions
+
+Tags
+
+Hashtags
+
+CTA
+
+SEO
+
+====================================================
+
+AI IMAGE GENERATOR
+
+Text to Image
+
+Brand Image
+
+Poster
+
+Flyer
+
+Carousel
+
+Instagram Post
+
+Facebook Banner
+
+LinkedIn Banner
+
+Thumbnail
+
+====================================================
+
+AI REEL GENERATOR
+
+Generate
+
+Script
+
+Voiceover
+
+Scenes
+
+Captions
+
+Prompt
+
+Timeline
+
+Export
+
+====================================================
+
+POSTING
+
+Publish Now
+
+Schedule
+
+Draft
+
+Recurring
+
+Queue
+
+====================================================
+
+CALENDAR
+
+Monthly
+
+Weekly
+
+Daily
+
+Drag Drop
+
+====================================================
+
+POST HISTORY
+
+Like GravityWrite
+
+Status
+
+Published
+
+Scheduled
+
+Draft
+
+Failed
+
+Cancelled
+
+Platform
+
+Image
+
+Caption
+
+Date
+
+Time
+
+Edit
+
+Delete
+
+Duplicate
+
+Analytics
+
+====================================================
+
+MEDIA LIBRARY
+
+Folders
+
+Search
+
+Filter
+
+Upload
+
+Delete
+
+Compress
+
+Cloud Storage
+
+====================================================
+
+ANALYTICS
+
+Followers
+
+Reach
+
+Engagement
+
+CTR
+
+Impressions
+
+Comments
+
+Likes
+
+Shares
+
+Growth
+
+Best Time
+
+Charts
+
+====================================================
+
+NOTIFICATIONS
+
+Email
+
+Push
+
+WhatsApp
+
+In App
+
+====================================================
+
+TEAM MANAGEMENT
+
+Invite Members
+
+Roles
+
+Admin
+
+Editor
+
+Viewer
+
+Client
+
+====================================================
+
+WORKSPACES
+
+One user can create multiple brands.
+
+Each brand can have
+
+Separate social accounts
+
+Separate media
+
+Separate analytics
+
+Separate billing
+
+====================================================
+
+ADMIN PANEL
+
+Separate Admin Login
+
+====================================================
+
+ADMIN DASHBOARD
+
+Total Users
+
+Active Users
+
+Revenue
+
+Subscriptions
+
+Connected Accounts
+
+Scheduled Posts
+
+Published Posts
+
+Failed Posts
+
+AI Requests
+
+Storage Used
+
+API Usage
+
+Server Status
+
+====================================================
+
+USER MANAGEMENT
+
+View Users
+
+Suspend
+
+Activate
+
+Delete
+
+Impersonate User
+
+Reset Password
+
+Assign Plan
+
+====================================================
+
+SUBSCRIPTION MANAGEMENT
+
+Create Plans
+
+Edit Plans
+
+Delete Plans
+
+Coupons
+
+GST
+
+Invoices
+
+Payments
+
+Refunds
+
+Trials
+
+====================================================
+
+PAYMENTS
+
+Stripe
+
+Razorpay
+
+PayPal
+
+====================================================
+
+SOCIAL PLATFORM MANAGEMENT
+
+Admin should be able to configure every social platform from Admin Panel.
+
+No code changes required.
+
+Admin should be able to add
+
+Client ID
+
+Client Secret
+
+API Key
+
+Redirect URI
+
+Scopes
+
+Webhook Secret
+
+Environment
+
+Production
+
+Sandbox
+
+Enable
+
+Disable
+
+Test Connection
+
+Supported platforms
+
+Facebook
+
+Instagram
+
+LinkedIn
+
+Pinterest
+
+X
+
+Threads
+
+TikTok
+
+YouTube
+
+Google Business
+
+WordPress
+
+Medium
+
+Exactly like YouTube OAuth setup but manageable from Admin Dashboard.
+
+Store encrypted.
+
+====================================================
+
+AI SETTINGS
+
+Admin can add
+
+OpenAI API Key
+
+Gemini API Key
+
+Claude API Key
+
+DeepSeek API Key
+
+Model Selection
+
+Temperature
+
+Max Tokens
+
+====================================================
+
+EMAIL SETTINGS
+
+SMTP
+
+SendGrid
+
+Resend
+
+Mailgun
+
+====================================================
+
+STORAGE SETTINGS
+
+AWS S3
+
+Cloudinary
+
+ImageKit
+
+Google Cloud Storage
+
+====================================================
+
+NOTIFICATION SETTINGS
+
+Firebase
+
+OneSignal
+
+WhatsApp API
+
+====================================================
+
+CMS
+
+Blogs
+
+FAQs
+
+Terms
+
+Privacy
+
+About
+
+Landing Page Sections
+
+====================================================
+
+LOGS
+
+API Logs
+
+Webhook Logs
+
+OAuth Logs
+
+Scheduler Logs
+
+AI Logs
+
+====================================================
+
+AUDIT LOGS
+
+Every action must be logged.
+
+====================================================
+
+SECURITY
+
+JWT
+
+Refresh Tokens
+
+Role Based Access
+
+Encrypted Tokens
+
+Rate Limiting
+
+CSRF
+
+XSS
+
+Helmet
+
+Input Validation
+
+2FA
+
+====================================================
+
+DATABASE
+
+PostgreSQL
+
+Prisma ORM
+
+Redis
+
+BullMQ
+
+====================================================
+
+BACKGROUND JOBS
+
+Scheduling Engine
+
+Publishing Queue
+
+Retry Failed Posts
+
+Token Refresh
+
+Webhook Processing
+
+Analytics Sync
+
+====================================================
+
+ARCHITECTURE
+
+Microservice Ready
+
+Clean Architecture
+
+Repository Pattern
+
+SOLID Principles
+
+====================================================
+
+DEPLOYMENT
+
+Docker
+
+Docker Compose
+
+GitHub Actions
+
+CI/CD
+
+Nginx
+
+SSL
+
+====================================================
+
+DELIVERABLES
+
+Generate
+
+Complete Frontend
+
+Complete Backend
+
+Database Schema
+
+Prisma Models
+
+REST APIs
+
+Authentication
+
+Admin Panel
+
+User Panel
+
+Landing Page
+
+Documentation
+
+Swagger
+
+Environment Variables
+
+Docker Files
+
+Deployment Guide
+
+Production Ready Code
+
+No placeholders.
+
+No mock data.
+
+Everything must be functional and production ready.
+
+Write scalable, clean, reusable code following enterprise standards.

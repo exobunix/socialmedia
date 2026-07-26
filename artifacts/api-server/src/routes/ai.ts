@@ -1,0 +1,138 @@
+import { Router, type IRouter } from "express";
+import { aiLogsTable } from "@workspace/db";
+import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { GenerateCaptionBody, GenerateHashtagsBody, RewriteContentBody, GenerateAiImageBody } from "@workspace/api-zod";
+
+const router: IRouter = Router();
+
+const TONES: Record<string, string> = {
+  professional: "Write in a professional and authoritative tone.",
+  funny: "Write in a funny and humorous tone.",
+  marketing: "Write in a compelling marketing tone with a strong CTA.",
+  corporate: "Write in a formal corporate tone.",
+  friendly: "Write in a warm and friendly conversational tone.",
+};
+
+const PLATFORM_PROMPTS: Record<string, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  linkedin: "LinkedIn",
+  x: "X (Twitter)",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  pinterest: "Pinterest",
+  threads: "Threads",
+};
+
+async function logAiUsage(userId: number, type: "caption" | "hashtags" | "rewrite" | "image", prompt: string, result: string) {
+  await aiLogsTable.create({ userId, type, prompt, result });
+}
+
+router.post("/ai/generate-caption", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const parsed = GenerateCaptionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { topic, platform, tone } = parsed.data;
+  const platformName = PLATFORM_PROMPTS[platform] ?? platform;
+  
+  // Generate contextual caption based on topic and platform
+  const captions = generateContextualCaption(topic, platformName, tone ?? "professional");
+  
+  await logAiUsage(req.userId!, "caption", `${topic} for ${platform}`, captions[0]);
+  res.json({ text: captions[0], alternatives: captions.slice(1) });
+});
+
+router.post("/ai/generate-hashtags", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const parsed = GenerateHashtagsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { topic, platform, count = 15 } = parsed.data;
+  const hashtags = generateHashtags(topic, platform, count);
+  await logAiUsage(req.userId!, "hashtags", `${topic} on ${platform}`, hashtags.join(" "));
+  res.json({ hashtags });
+});
+
+router.post("/ai/rewrite", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const parsed = RewriteContentBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { content, tone } = parsed.data;
+  const rewritten = rewriteContent(content, tone);
+  await logAiUsage(req.userId!, "rewrite", content.slice(0, 100), rewritten);
+  res.json({ text: rewritten, alternatives: [] });
+});
+
+router.post("/ai/generate-image", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const parsed = GenerateAiImageBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { prompt } = parsed.data;
+  // Return a placeholder image URL for now
+  const imageUrl = `https://picsum.photos/seed/${encodeURIComponent(prompt.slice(0, 10))}/800/800`;
+  await logAiUsage(req.userId!, "image", prompt, imageUrl);
+  res.json({ imageUrl, prompt });
+});
+
+router.get("/ai/history", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const logs = await aiLogsTable.find({ userId: req.userId! }).sort({ createdAt: 1 });
+  res.json(logs);
+});
+
+// Helper functions for AI content generation
+function generateContextualCaption(topic: string, platform: string, tone: string): string[] {
+  const toneAdjectives: Record<string, string[]> = {
+    professional: ["Elevate your", "Transform your", "Optimize your"],
+    funny: ["Warning:", "Plot twist:", "Hot take:"],
+    marketing: ["Unlock", "Discover", "Get ready for"],
+    corporate: ["We are proud to announce", "Our commitment to", "Introducing"],
+    friendly: ["Hey! Just wanted to share", "Can we talk about", "Loving this"],
+  };
+
+  const adj = toneAdjectives[tone] ?? toneAdjectives.professional;
+  return [
+    `${adj[0]} ${topic} strategy for maximum ${platform} impact. Every post counts. Every interaction matters. Start today. #Growth #${platform.replace(/\s+/g, "")}`,
+    `${adj[1]} your ${topic} game with proven ${platform} techniques that actually work. The results speak for themselves. #Success #Digital`,
+    `${adj[2]} the power of ${topic} on ${platform}. Your audience is waiting. Your story deserves to be told. #ContentCreation #Marketing`,
+  ];
+}
+
+function generateHashtags(topic: string, platform: string, count: number): string[] {
+  const base = topic.toLowerCase().replace(/\s+/g, "");
+  const generic = ["contentcreator", "socialmedia", "digitalmarketing", "marketing", "growth", "business", "entrepreneur", "success", "branding", "content"];
+  const platformTags: Record<string, string[]> = {
+    instagram: ["instadaily", "instapost", "instagrammarketing", "reels", "igdaily"],
+    linkedin: ["linkedinmarketing", "b2b", "professional", "networking", "leadership"],
+    tiktok: ["tiktokmarketing", "tiktoktips", "fyp", "viral", "trending"],
+    twitter: ["twittermarketing", "tweet", "trending", "viral"],
+    x: ["xmarketing", "trending", "viral"],
+    youtube: ["youtubemarketing", "youtube", "youtubechannel", "subscribers"],
+    facebook: ["facebookmarketing", "facebook", "facebookads"],
+  };
+
+  const specific = [base, `${base}marketing`, `${base}tips`, `${base}strategy`, `${base}growth`];
+  const platformSpecific = platformTags[platform.toLowerCase()] ?? [];
+  const all = [...specific, ...platformSpecific, ...generic];
+  return all.slice(0, count).map(t => `#${t}`);
+}
+
+function rewriteContent(content: string, tone: string): string {
+  const prefixes: Record<string, string> = {
+    professional: "From a strategic perspective: ",
+    funny: "Here's the thing nobody tells you: ",
+    marketing: "ATTENTION: This changes everything. ",
+    corporate: "We are pleased to share: ",
+    friendly: "Hey! So, ",
+  };
+  const prefix = prefixes[tone] ?? "";
+  return `${prefix}${content.trim()}`;
+}
+
+export default router;

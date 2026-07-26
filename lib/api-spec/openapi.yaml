@@ -3,20 +3,44 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SocialFlow AI API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: workspaces
+    description: Workspace management
+  - name: social-accounts
+    description: Social media account connections
+  - name: posts
+    description: Post management
+  - name: media
+    description: Media library
+  - name: analytics
+    description: Analytics data
+  - name: plans
+    description: Subscription plans
+  - name: subscriptions
+    description: User subscriptions
+  - name: team
+    description: Team management
+  - name: notifications
+    description: Notifications
+  - name: ai
+    description: AI generation features
+  - name: admin
+    description: Admin panel
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +48,1136 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ───────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      summary: Logout user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+    patch:
+      operationId: updateMe
+      tags: [auth]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Send password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "200":
+          description: Email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+
+  # ─── WORKSPACES ─────────────────────────────────────────────────────────────
+  /workspaces:
+    get:
+      operationId: listWorkspaces
+      tags: [workspaces]
+      summary: List user workspaces
+      responses:
+        "200":
+          description: List of workspaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workspace"
+    post:
+      operationId: createWorkspace
+      tags: [workspaces]
+      summary: Create workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+
+  /workspaces/{id}:
+    get:
+      operationId: getWorkspace
+      tags: [workspaces]
+      summary: Get workspace
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateWorkspace
+      tags: [workspaces]
+      summary: Update workspace
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+    delete:
+      operationId: deleteWorkspace
+      tags: [workspaces]
+      summary: Delete workspace
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── SOCIAL ACCOUNTS ────────────────────────────────────────────────────────
+  /workspaces/{workspaceId}/social-accounts:
+    get:
+      operationId: listSocialAccounts
+      tags: [social-accounts]
+      summary: List connected social accounts
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Social accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialAccount"
+    post:
+      operationId: connectSocialAccount
+      tags: [social-accounts]
+      summary: Connect a social account
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SocialAccountInput"
+      responses:
+        "201":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialAccount"
+
+  /workspaces/{workspaceId}/social-accounts/{id}:
+    get:
+      operationId: getSocialAccount
+      tags: [social-accounts]
+      summary: Get social account
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Social account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialAccount"
+    delete:
+      operationId: disconnectSocialAccount
+      tags: [social-accounts]
+      summary: Disconnect social account
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Disconnected
+
+  # ─── POSTS ──────────────────────────────────────────────────────────────────
+  /workspaces/{workspaceId}/posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: List posts
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Posts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostList"
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create post
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /workspaces/{workspaceId}/posts/{id}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get post
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePost
+      tags: [posts]
+      summary: Update post
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Delete post
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /workspaces/{workspaceId}/posts/{id}/publish:
+    post:
+      operationId: publishPost
+      tags: [posts]
+      summary: Publish post immediately
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /workspaces/{workspaceId}/posts/{id}/duplicate:
+    post:
+      operationId: duplicatePost
+      tags: [posts]
+      summary: Duplicate post
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Duplicated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /workspaces/{workspaceId}/calendar:
+    get:
+      operationId: getCalendarPosts
+      tags: [posts]
+      summary: Get posts grouped by date for calendar view
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Calendar posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarDay"
+
+  # ─── MEDIA ──────────────────────────────────────────────────────────────────
+  /workspaces/{workspaceId}/media:
+    get:
+      operationId: listMedia
+      tags: [media]
+      summary: List media files
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Media files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaFile"
+    post:
+      operationId: uploadMedia
+      tags: [media]
+      summary: Upload media file (URL-based)
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUploadInput"
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaFile"
+
+  /workspaces/{workspaceId}/media/{id}:
+    delete:
+      operationId: deleteMedia
+      tags: [media]
+      summary: Delete media file
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── ANALYTICS ──────────────────────────────────────────────────────────────
+  /workspaces/{workspaceId}/analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      tags: [analytics]
+      summary: Get analytics summary for workspace
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsSummary"
+
+  /workspaces/{workspaceId}/analytics/posts:
+    get:
+      operationId: getPostAnalytics
+      tags: [analytics]
+      summary: Get per-post analytics
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Post analytics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostAnalytics"
+
+  # ─── DASHBOARD SUMMARY (WOW) ─────────────────────────────────────────────────
+  /workspaces/{workspaceId}/dashboard:
+    get:
+      operationId: getDashboard
+      tags: [analytics]
+      summary: Get dashboard summary with stats, recent posts, upcoming schedule
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  # ─── PLANS ──────────────────────────────────────────────────────────────────
+  /plans:
+    get:
+      operationId: listPlans
+      tags: [plans]
+      summary: List subscription plans
+      responses:
+        "200":
+          description: Plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+
+  # ─── SUBSCRIPTIONS ───────────────────────────────────────────────────────────
+  /subscriptions/current:
+    get:
+      operationId: getCurrentSubscription
+      tags: [subscriptions]
+      summary: Get current user subscription
+      responses:
+        "200":
+          description: Subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+
+  /subscriptions:
+    post:
+      operationId: createSubscription
+      tags: [subscriptions]
+      summary: Subscribe to a plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionInput"
+      responses:
+        "201":
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+
+  /subscriptions/cancel:
+    post:
+      operationId: cancelSubscription
+      tags: [subscriptions]
+      summary: Cancel subscription
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+
+  # ─── TEAM ────────────────────────────────────────────────────────────────────
+  /workspaces/{workspaceId}/team:
+    get:
+      operationId: listTeamMembers
+      tags: [team]
+      summary: List team members
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+    post:
+      operationId: inviteTeamMember
+      tags: [team]
+      summary: Invite team member
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInviteInput"
+      responses:
+        "201":
+          description: Invited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /workspaces/{workspaceId}/team/{memberId}:
+    patch:
+      operationId: updateTeamMember
+      tags: [team]
+      summary: Update team member role
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamMemberUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+    delete:
+      operationId: removeTeamMember
+      tags: [team]
+      summary: Remove team member
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  # ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    patch:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Marked all read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+
+  # ─── AI ──────────────────────────────────────────────────────────────────────
+  /ai/generate-caption:
+    post:
+      operationId: generateCaption
+      tags: [ai]
+      summary: Generate AI caption for social media
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptionGenerateInput"
+      responses:
+        "200":
+          description: Generated caption
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiTextResult"
+
+  /ai/generate-hashtags:
+    post:
+      operationId: generateHashtags
+      tags: [ai]
+      summary: Generate AI hashtags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HashtagGenerateInput"
+      responses:
+        "200":
+          description: Generated hashtags
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiHashtagResult"
+
+  /ai/rewrite:
+    post:
+      operationId: rewriteContent
+      tags: [ai]
+      summary: Rewrite content with AI in different tone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RewriteInput"
+      responses:
+        "200":
+          description: Rewritten content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiTextResult"
+
+  /ai/generate-image:
+    post:
+      operationId: generateAiImage
+      tags: [ai]
+      summary: Generate AI image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageGenerateInput"
+      responses:
+        "200":
+          description: Generated image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiImageResult"
+
+  /ai/history:
+    get:
+      operationId: listAiHistory
+      tags: [ai]
+      summary: List AI generation history
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: AI history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AiGenerationLog"
+
+  # ─── ADMIN ───────────────────────────────────────────────────────────────────
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Admin stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserList"
+
+  /admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      tags: [admin]
+      summary: Get user details (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update user (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/plans:
+    get:
+      operationId: listAdminPlans
+      tags: [admin]
+      summary: List plans (admin)
+      responses:
+        "200":
+          description: Plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+    post:
+      operationId: createAdminPlan
+      tags: [admin]
+      summary: Create plan (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+
+  /admin/plans/{id}:
+    patch:
+      operationId: updateAdminPlan
+      tags: [admin]
+      summary: Update plan (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+    delete:
+      operationId: deleteAdminPlan
+      tags: [admin]
+      summary: Delete plan (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/platform-configs:
+    get:
+      operationId: listPlatformConfigs
+      tags: [admin]
+      summary: List social platform configs
+      responses:
+        "200":
+          description: Platform configs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlatformConfig"
+    post:
+      operationId: upsertPlatformConfig
+      tags: [admin]
+      summary: Create or update platform config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformConfigInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformConfig"
+
+  /admin/platform-configs/{platform}:
+    get:
+      operationId: getPlatformConfig
+      tags: [admin]
+      summary: Get platform config
+      parameters:
+        - name: platform
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Platform config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformConfig"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +1188,885 @@ components:
       required:
         - status
 
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    # ─── AUTH SCHEMAS ──────────────────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, email, name, role, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [user, admin]
+        isVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UserRegisterInput:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 6
+
+    UserLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        avatarUrl:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+
+    ForgotPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+    ResetPasswordInput:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 6
+
+    # ─── WORKSPACE SCHEMAS ─────────────────────────────────────────────────────
+    Workspace:
+      type: object
+      required: [id, name, ownerId, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        ownerId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    WorkspaceInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        logoUrl:
+          type: string
+
+    WorkspaceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+
+    # ─── SOCIAL ACCOUNT SCHEMAS ────────────────────────────────────────────────
+    SocialAccount:
+      type: object
+      required: [id, workspaceId, platform, username, status, createdAt]
+      properties:
+        id:
+          type: integer
+        workspaceId:
+          type: integer
+        platform:
+          type: string
+          enum: [facebook, instagram, linkedin, pinterest, x, youtube, threads, tiktok, google_business, wordpress, medium]
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, expired, disconnected]
+        followersCount:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    SocialAccountInput:
+      type: object
+      required: [platform, username, accessToken]
+      properties:
+        platform:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        profileImageUrl:
+          type: string
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        platformUserId:
+          type: string
+        followersCount:
+          type: integer
+
+    # ─── POST SCHEMAS ──────────────────────────────────────────────────────────
+    Post:
+      type: object
+      required: [id, workspaceId, content, status, platforms, createdAt]
+      properties:
+        id:
+          type: integer
+        workspaceId:
+          type: integer
+        content:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, published, failed, cancelled]
+        platforms:
+          type: array
+          items:
+            type: string
+        mediaUrls:
+          type: array
+          items:
+            type: string
+        hashtags:
+          type: array
+          items:
+            type: string
+        scheduledAt:
+          type: ["string", "null"]
+          format: date-time
+        publishedAt:
+          type: ["string", "null"]
+          format: date-time
+        tone:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        likesCount:
+          type: ["integer", "null"]
+        sharesCount:
+          type: ["integer", "null"]
+        commentsCount:
+          type: ["integer", "null"]
+        impressionsCount:
+          type: ["integer", "null"]
+
+    PostList:
+      type: object
+      required: [posts, total, page, limit]
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Post"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    PostInput:
+      type: object
+      required: [content, platforms]
+      properties:
+        content:
+          type: string
+          minLength: 1
+        platforms:
+          type: array
+          items:
+            type: string
+        mediaUrls:
+          type: array
+          items:
+            type: string
+        hashtags:
+          type: array
+          items:
+            type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        tone:
+          type: string
+          enum: [professional, funny, marketing, corporate, friendly]
+        status:
+          type: string
+          enum: [draft, scheduled]
+
+    PostUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+        platforms:
+          type: array
+          items:
+            type: string
+        mediaUrls:
+          type: array
+          items:
+            type: string
+        hashtags:
+          type: array
+          items:
+            type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        tone:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, cancelled]
+
+    CalendarDay:
+      type: object
+      required: [date, posts]
+      properties:
+        date:
+          type: string
+          format: date
+        posts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Post"
+
+    # ─── MEDIA SCHEMAS ─────────────────────────────────────────────────────────
+    MediaFile:
+      type: object
+      required: [id, workspaceId, url, type, filename, createdAt]
+      properties:
+        id:
+          type: integer
+        workspaceId:
+          type: integer
+        url:
+          type: string
+        type:
+          type: string
+          enum: [image, video, document]
+        filename:
+          type: string
+        sizeBytes:
+          type: ["integer", "null"]
+        mimeType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    MediaUploadInput:
+      type: object
+      required: [url, type, filename]
+      properties:
+        url:
+          type: string
+        type:
+          type: string
+          enum: [image, video, document]
+        filename:
+          type: string
+        sizeBytes:
+          type: integer
+        mimeType:
+          type: string
+
+    # ─── ANALYTICS SCHEMAS ─────────────────────────────────────────────────────
+    AnalyticsSummary:
+      type: object
+      required: [totalPosts, publishedPosts, scheduledPosts, totalFollowers, totalReach, totalEngagement, engagementRate, period]
+      properties:
+        totalPosts:
+          type: integer
+        publishedPosts:
+          type: integer
+        scheduledPosts:
+          type: integer
+        draftPosts:
+          type: integer
+        totalFollowers:
+          type: integer
+        totalReach:
+          type: integer
+        totalEngagement:
+          type: integer
+        engagementRate:
+          type: number
+        totalImpressions:
+          type: integer
+        period:
+          type: string
+        platformBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatformStat"
+        engagementTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrendPoint"
+
+    PlatformStat:
+      type: object
+      required: [platform, posts, engagement]
+      properties:
+        platform:
+          type: string
+        posts:
+          type: integer
+        engagement:
+          type: integer
+        followers:
+          type: integer
+
+    TrendPoint:
+      type: object
+      required: [date, value]
+      properties:
+        date:
+          type: string
+        value:
+          type: number
+
+    PostAnalytics:
+      type: object
+      required: [postId, platform, likes, shares, comments, impressions, reach]
+      properties:
+        postId:
+          type: integer
+        platform:
+          type: string
+        likes:
+          type: integer
+        shares:
+          type: integer
+        comments:
+          type: integer
+        impressions:
+          type: integer
+        reach:
+          type: integer
+        engagementRate:
+          type: number
+
+    DashboardSummary:
+      type: object
+      required: [stats, recentPosts, upcomingPosts, socialAccounts, aiUsage]
+      properties:
+        stats:
+          $ref: "#/components/schemas/AnalyticsSummary"
+        recentPosts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Post"
+        upcomingPosts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Post"
+        socialAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialAccount"
+        aiUsage:
+          type: object
+          required: [captionsGenerated, imagesGenerated, hashtagsGenerated]
+          properties:
+            captionsGenerated:
+              type: integer
+            imagesGenerated:
+              type: integer
+            hashtagsGenerated:
+              type: integer
+
+    # ─── PLAN SCHEMAS ──────────────────────────────────────────────────────────
+    Plan:
+      type: object
+      required: [id, name, priceMonthly, features, isActive]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        priceMonthly:
+          type: number
+        priceYearly:
+          type: ["number", "null"]
+        currency:
+          type: string
+        maxSocialAccounts:
+          type: ["integer", "null"]
+        maxScheduledPosts:
+          type: ["integer", "null"]
+        maxAiImages:
+          type: ["integer", "null"]
+        maxTeamMembers:
+          type: ["integer", "null"]
+        features:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+        description:
+          type: ["string", "null"]
+
+    PlanInput:
+      type: object
+      required: [name, priceMonthly, features]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        priceMonthly:
+          type: number
+        priceYearly:
+          type: number
+        currency:
+          type: string
+        maxSocialAccounts:
+          type: integer
+        maxScheduledPosts:
+          type: integer
+        maxAiImages:
+          type: integer
+        maxTeamMembers:
+          type: integer
+        features:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+        description:
+          type: string
+
+    PlanUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        priceMonthly:
+          type: number
+        priceYearly:
+          type: number
+        features:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+        description:
+          type: string
+        maxSocialAccounts:
+          type: integer
+        maxScheduledPosts:
+          type: integer
+
+    # ─── SUBSCRIPTION SCHEMAS ──────────────────────────────────────────────────
+    Subscription:
+      type: object
+      required: [id, userId, planId, status, startedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        planId:
+          type: integer
+        plan:
+          $ref: "#/components/schemas/Plan"
+        status:
+          type: string
+          enum: [active, cancelled, expired, trialing]
+        startedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        cancelledAt:
+          type: ["string", "null"]
+          format: date-time
+
+    SubscriptionInput:
+      type: object
+      required: [planId]
+      properties:
+        planId:
+          type: integer
+        billingCycle:
+          type: string
+          enum: [monthly, yearly]
+
+    # ─── TEAM SCHEMAS ──────────────────────────────────────────────────────────
+    TeamMember:
+      type: object
+      required: [id, workspaceId, userId, role, status, createdAt]
+      properties:
+        id:
+          type: integer
+        workspaceId:
+          type: integer
+        userId:
+          type: ["integer", "null"]
+        inviteEmail:
+          type: string
+        role:
+          type: string
+          enum: [admin, editor, viewer, client]
+        status:
+          type: string
+          enum: [active, pending, removed]
+        user:
+          $ref: "#/components/schemas/User"
+        createdAt:
+          type: string
+          format: date-time
+
+    TeamInviteInput:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, editor, viewer, client]
+
+    TeamMemberUpdate:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [admin, editor, viewer, client]
+
+    # ─── NOTIFICATION SCHEMAS ──────────────────────────────────────────────────
+    Notification:
+      type: object
+      required: [id, userId, title, message, type, isRead, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [post_published, post_failed, invite, system, analytics]
+        isRead:
+          type: boolean
+        linkUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    # ─── AI SCHEMAS ────────────────────────────────────────────────────────────
+    AiTextResult:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+        alternatives:
+          type: array
+          items:
+            type: string
+
+    AiHashtagResult:
+      type: object
+      required: [hashtags]
+      properties:
+        hashtags:
+          type: array
+          items:
+            type: string
+
+    AiImageResult:
+      type: object
+      required: [imageUrl]
+      properties:
+        imageUrl:
+          type: string
+        prompt:
+          type: string
+
+    CaptionGenerateInput:
+      type: object
+      required: [topic, platform]
+      properties:
+        topic:
+          type: string
+        platform:
+          type: string
+        tone:
+          type: string
+          enum: [professional, funny, marketing, corporate, friendly]
+        keywords:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+
+    HashtagGenerateInput:
+      type: object
+      required: [topic, platform]
+      properties:
+        topic:
+          type: string
+        platform:
+          type: string
+        count:
+          type: integer
+
+    RewriteInput:
+      type: object
+      required: [content, tone]
+      properties:
+        content:
+          type: string
+        tone:
+          type: string
+          enum: [professional, funny, marketing, corporate, friendly]
+        platform:
+          type: string
+
+    ImageGenerateInput:
+      type: object
+      required: [prompt, style]
+      properties:
+        prompt:
+          type: string
+        style:
+          type: string
+          enum: [realistic, cartoon, artistic, minimalist, branded]
+        aspectRatio:
+          type: string
+          enum: ["1:1", "16:9", "9:16", "4:5"]
+
+    AiGenerationLog:
+      type: object
+      required: [id, userId, type, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [caption, hashtags, rewrite, image]
+        prompt:
+          type: ["string", "null"]
+        result:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    # ─── ADMIN SCHEMAS ─────────────────────────────────────────────────────────
+    AdminStats:
+      type: object
+      required: [totalUsers, activeUsers, totalRevenue, totalSubscriptions, connectedAccounts, scheduledPosts, publishedPosts, failedPosts, aiRequests]
+      properties:
+        totalUsers:
+          type: integer
+        activeUsers:
+          type: integer
+        totalRevenue:
+          type: number
+        totalSubscriptions:
+          type: integer
+        connectedAccounts:
+          type: integer
+        scheduledPosts:
+          type: integer
+        publishedPosts:
+          type: integer
+        failedPosts:
+          type: integer
+        aiRequests:
+          type: integer
+        storageUsedMb:
+          type: number
+        newUsersToday:
+          type: integer
+        newUsersThisWeek:
+          type: integer
+        revenueThisMonth:
+          type: number
+
+    AdminUser:
+      type: object
+      required: [id, email, name, role, status, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        status:
+          type: string
+          enum: [active, suspended]
+        isVerified:
+          type: boolean
+        planName:
+          type: ["string", "null"]
+        workspacesCount:
+          type: integer
+        postsCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: ["string", "null"]
+          format: date-time
+
+    AdminUserList:
+      type: object
+      required: [users, total, page, limit]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    AdminUserUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, suspended]
+        role:
+          type: string
+          enum: [user, admin]
+        planId:
+          type: integer
+
+    PlatformConfig:
+      type: object
+      required: [id, platform, isEnabled, environment]
+      properties:
+        id:
+          type: integer
+        platform:
+          type: string
+        clientId:
+          type: ["string", "null"]
+        redirectUri:
+          type: ["string", "null"]
+        scopes:
+          type: ["string", "null"]
+        environment:
+          type: string
+          enum: [production, sandbox]
+        isEnabled:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    PlatformConfigInput:
+      type: object
+      required: [platform]
+      properties:
+        platform:
+          type: string
+        clientId:
+          type: string
+        clientSecret:
+          type: string
+        redirectUri:
+          type: string
+        scopes:
+          type: string
+        webhookSecret:
+          type: string
+        environment:
+          type: string
+          enum: [production, sandbox]
+        isEnabled:
+          type: boolean
