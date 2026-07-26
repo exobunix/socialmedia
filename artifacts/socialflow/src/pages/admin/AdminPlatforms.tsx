@@ -43,7 +43,7 @@ export function AdminPlatforms() {
   // Save Social Platform Mutation
   const saveSocialMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await fetch("/api/admin/platform-configs", {
+      const res = await fetch(`/api/admin/platform-configs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
