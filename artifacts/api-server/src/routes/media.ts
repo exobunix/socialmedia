@@ -39,7 +39,7 @@ router.post("/workspaces/:workspaceId/media", requireAuth, async (req: Authentic
     const formData = new FormData();
     formData.append("file", base64Data);
     formData.append("fileName", parsed.data.filename || "upload");
-    formData.append("folder", process.env.IMAGEKIT_FOLDER || "/Social Media Automation");
+    formData.append("folder", process.env.IMAGEKIT_FOLDER || "Social Media Automation");
     formData.append("useUniqueFileName", "true");
 
     console.log("Uploading file to ImageKit...");
