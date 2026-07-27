@@ -3,8 +3,68 @@ import { mediaFilesTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 import { ListMediaParams, UploadMediaParams, UploadMediaBody, DeleteMediaParams } from "@workspace/api-zod";
 import "../lib/env-loader";
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import { execFile } from "child_process";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
+const ffmpegPath = ffmpegInstaller.path;
 const router: IRouter = Router();
+
+async function compressVideo(base64Data: string): Promise<string> {
+  const matches = base64Data.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+  let mimeType = "video/mp4";
+  let base64Body = base64Data;
+  
+  if (matches && matches.length === 3) {
+    mimeType = matches[1];
+    base64Body = matches[2];
+  }
+  
+  const buffer = Buffer.from(base64Body, "base64");
+  const tempDir = os.tmpdir();
+  const inputPath = path.join(tempDir, `input_${Date.now()}.mp4`);
+  const outputPath = path.join(tempDir, `output_${Date.now()}.mp4`);
+  
+  await fs.promises.writeFile(inputPath, buffer);
+  
+  return new Promise((resolve, reject) => {
+    // Compress video using low presets and 480p scaling for maximum speed & memory savings on free tier
+    execFile(
+      ffmpegPath,
+      [
+        "-y",
+        "-i", inputPath,
+        "-vcodec", "libx264",
+        "-crf", "30",
+        "-preset", "ultrafast",
+        "-acodec", "aac",
+        "-vf", "scale=-2:480",
+        outputPath
+      ],
+      async (error, stdout, stderr) => {
+        try { await fs.promises.unlink(inputPath); } catch {}
+        
+        if (error) {
+          console.error("FFmpeg Compression Error Stderr:", stderr);
+          try { await fs.promises.unlink(outputPath); } catch {}
+          reject(new Error("FFmpeg video compression failed: " + error.message));
+          return;
+        }
+        
+        try {
+          const compressedBuffer = await fs.promises.readFile(outputPath);
+          const compressedBase64 = `data:${mimeType};base64,${compressedBuffer.toString("base64")}`;
+          try { await fs.promises.unlink(outputPath); } catch {}
+          resolve(compressedBase64);
+        } catch (err: any) {
+          reject(new Error("Failed to read compressed video output: " + err.message));
+        }
+      }
+    );
+  });
+}
 
 router.get("/workspaces/:workspaceId/media", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   const params = ListMediaParams.safeParse(req.params);
@@ -29,8 +89,18 @@ router.post("/workspaces/:workspaceId/media", requireAuth, async (req: Authentic
   }
 
   try {
-    const base64Data = parsed.data.url;
+    let base64Data = parsed.data.url;
     const type = parsed.data.type || (base64Data.startsWith("data:video/") ? "video" : "image");
+
+    if (type === "video") {
+      try {
+        console.log("Compressing video using FFmpeg...");
+        base64Data = await compressVideo(base64Data);
+        console.log("Video compression complete!");
+      } catch (err: any) {
+        console.error("Video compression failed, uploading original:", err);
+      }
+    }
     
     // ImageKit upload setup
     const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || "private_q34ikaQJf2j1Frf6WPMDoDJ+5cU=";
