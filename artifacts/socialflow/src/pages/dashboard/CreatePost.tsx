@@ -205,19 +205,43 @@ export function CreatePost() {
   const handleSubmit = () => {
     if (!content) return toast.error("Content is required");
     
+    // Create as draft first to comply with backend Zod schema restrictions, then trigger publish endpoint
+    const postStatus = status === "published" ? "draft" : status;
+    
     createPost.mutate({
       workspaceId: workspaceId!,
       data: {
         content,
         platforms: selectedPlatforms,
-        status: status as any,
+        status: postStatus as any,
         tone: tone as any,
         mediaUrls: mediaList.map(m => m.url),
         hashtags: []
       }
     }, {
-      onSuccess: () => {
-        toast.success("Post created successfully!");
+      onSuccess: async (createdPost: any) => {
+        if (status === "published") {
+          try {
+            toast.info("Publishing content to YouTube...");
+            const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/posts/${createdPost.id}/publish`), {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
+              }
+            });
+            if (res.ok) {
+              toast.success("Post published successfully!");
+            } else {
+              const errData = await res.json();
+              toast.error(errData.error || "Failed to publish post");
+            }
+          } catch (err) {
+            console.error(err);
+            toast.error("Failed to publish post");
+          }
+        } else {
+          toast.success("Post saved successfully!");
+        }
         setLocation("/posts");
       }
     });
