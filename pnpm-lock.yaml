@@ -148,6 +148,9 @@ importers:
 
   .:
     dependencies:
+      '@huggingface/inference':
+        specifier: ^4.13.23
+        version: 4.13.23
       '@replit/connectors-sdk':
         specifier: ^0.4.1
         version: 0.4.1
@@ -164,6 +167,9 @@ importers:
       '@ffmpeg-installer/ffmpeg':
         specifier: ^1.1.0
         version: 1.1.0
+      '@huggingface/inference':
+        specifier: ^4.13.23
+        version: 4.13.23
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
@@ -812,6 +818,17 @@ packages:
     resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
     peerDependencies:
       react-hook-form: ^7.0.0
+
+  '@huggingface/inference@4.13.23':
+    resolution: {integrity: sha512-sUi2+AZP0Gda1zBXDl3HZo3O/qJnhUks53e7DKD4s+igo3ccbbULWvCZrU99M/nqDMSWCcZQxJCX8mH+OHNy2g==}
+    engines: {node: '>=18'}
+
+  '@huggingface/jinja@0.5.9':
+    resolution: {integrity: sha512-uWTG+l3VJRsl7EXxYizuL3P+cCPoc3cRqbWWRcQN0FhejRfbdq0RNhCmbY/YDtnTcz9icdLYuLDjsnz4d8JMuw==}
+    engines: {node: '>=18'}
+
+  '@huggingface/tasks@0.21.28':
+    resolution: {integrity: sha512-PCduFL8/f3VfBIIY+fnjcBfRTLgsWHBWJls1xcYRNkJM4iKpwWfEsFnsH/4YP678zZRieNbTh8JUBP9/1NgMbg==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -3331,6 +3348,15 @@ snapshots:
   '@hookform/resolvers@3.10.0(react-hook-form@7.82.0(react@19.1.0))':
     dependencies:
       react-hook-form: 7.82.0(react@19.1.0)
+
+  '@huggingface/inference@4.13.23':
+    dependencies:
+      '@huggingface/jinja': 0.5.9
+      '@huggingface/tasks': 0.21.28
+
+  '@huggingface/jinja@0.5.9': {}
+
+  '@huggingface/tasks@0.21.28': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

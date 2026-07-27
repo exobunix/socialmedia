@@ -1,5 +1,7 @@
 import { platformConfigsTable, decrypt } from "@workspace/db";
+import { InferenceClient } from "@huggingface/inference";
 import dns from "dns";
+
 
 try {
   dns.setServers(["8.8.8.8", "1.1.1.1"]);
@@ -239,45 +241,28 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
     try {
       const apiKey = decrypt(fluxConfig.aiConfig.apiKey);
       const model = fluxConfig.aiConfig.model || "black-forest-labs/FLUX.1-dev";
-      console.log(`Routing image generation to Hugging Face Flux (${model})`);
-      let res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "x-wait-for-model": "true"
-        },
-        body: JSON.stringify({ inputs: prompt })
-      });
+      console.log(`Routing image generation to Hugging Face Flux SDK (${model})`);
+      const hf = new InferenceClient(apiKey);
       
-      if (res.ok) {
-        const buffer = await res.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-        return `data:image/jpeg;base64,${base64}`;
+      let blob: any;
+      try {
+        blob = await hf.textToImage({
+          model,
+          inputs: prompt
+        });
+      } catch (err: any) {
+        console.warn(`Flux model ${model} failed via SDK, trying FLUX.1-schnell fallback...`, err.message || err);
+        blob = await hf.textToImage({
+          model: "black-forest-labs/FLUX.1-schnell",
+          inputs: prompt
+        });
       }
 
-      // Fallback to FLUX.1-schnell if dev fails (e.g. gated or loading issues)
-      console.log("Flux Dev failed, trying FLUX.1-schnell (non-gated)...");
-      res = await fetch("https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "x-wait-for-model": "true"
-        },
-        body: JSON.stringify({ inputs: prompt })
-      });
-      if (res.ok) {
-        const buffer = await res.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-        return `data:image/jpeg;base64,${base64}`;
-      }
-
-      const errText = await res.text();
-      console.error("Hugging Face Flux failed:", errText);
-      lastError = new Error(errText || "Hugging Face Flux failed");
+      const buffer = await blob.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString("base64");
+      return `data:image/jpeg;base64,${base64}`;
     } catch (err: any) {
-      console.error("Flux image generation error:", err);
+      console.error("Flux image generation SDK error:", err);
       lastError = err;
     }
   }
@@ -286,44 +271,28 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
     try {
       const apiKey = decrypt(sdConfig.aiConfig.apiKey);
       const model = sdConfig.aiConfig.model || "stabilityai/stable-diffusion-3.5-large";
-      console.log(`Routing image generation to Hugging Face Stable Diffusion (${model})`);
-      let res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "x-wait-for-model": "true"
-        },
-        body: JSON.stringify({ inputs: prompt })
-      });
-      if (res.ok) {
-        const buffer = await res.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-        return `data:image/jpeg;base64,${base64}`;
+      console.log(`Routing image generation to Hugging Face Stable Diffusion SDK (${model})`);
+      const hf = new InferenceClient(apiKey);
+
+      let blob: any;
+      try {
+        blob = await hf.textToImage({
+          model,
+          inputs: prompt
+        });
+      } catch (err: any) {
+        console.warn(`Stable Diffusion model ${model} failed via SDK, trying SD XL fallback...`, err.message || err);
+        blob = await hf.textToImage({
+          model: "stabilityai/stable-diffusion-xl-base-1.0",
+          inputs: prompt
+        });
       }
 
-      // Fallback to Stable Diffusion XL (non-gated)
-      console.log("SD 3.5 Large failed, trying SD XL (non-gated)...");
-      res = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "x-wait-for-model": "true"
-        },
-        body: JSON.stringify({ inputs: prompt })
-      });
-      if (res.ok) {
-        const buffer = await res.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-        return `data:image/jpeg;base64,${base64}`;
-      }
-
-      const errText = await res.text();
-      console.error("Hugging Face Stable Diffusion failed:", errText);
-      lastError = new Error(errText || "Hugging Face Stable Diffusion failed");
+      const buffer = await blob.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString("base64");
+      return `data:image/jpeg;base64,${base64}`;
     } catch (err: any) {
-      console.error("Stable Diffusion image generation error:", err);
+      console.error("Stable Diffusion image generation SDK error:", err);
       lastError = err;
     }
   }
