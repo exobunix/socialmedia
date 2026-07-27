@@ -609,6 +609,45 @@ router.post("/admin/ai-configs/test", requireAdmin, async (req, res): Promise<vo
       } else {
         errorMsg = data.error?.message || "Failed OpenAI test completion";
       }
+    } else if (platform === "claude") {
+      const testRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          model: model || "claude-3-5-sonnet-latest",
+          max_tokens: 5,
+          messages: [{ role: "user", content: "Hello" }]
+        })
+      });
+      const data = await testRes.json() as any;
+      if (testRes.ok && !data.error) {
+        success = true;
+      } else {
+        errorMsg = data.error?.message || "Failed Claude test connection";
+      }
+    } else if (platform === "groq") {
+      const testRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model || "llama3-8b-8192",
+          messages: [{ role: "user", content: "Hello" }],
+          max_tokens: 5
+        })
+      });
+      const data = await testRes.json() as any;
+      if (testRes.ok && !data.error) {
+        success = true;
+      } else {
+        errorMsg = data.error?.message || "Failed Groq test connection";
+      }
     } else {
       success = true;
     }

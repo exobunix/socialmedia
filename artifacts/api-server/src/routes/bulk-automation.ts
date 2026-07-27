@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 import { publishPostToYouTube } from "../lib/social-publishers";
+import { callAiTextProvider } from "../lib/ai-helpers";
 
 const router: IRouter = Router();
 
@@ -139,24 +140,6 @@ router.post("/workspaces/:workspaceId/bulk-batches/:batchId/process-ai", require
   const workspaceId = Number(req.params.workspaceId);
 
   try {
-    // Retrieve configs
-    const geminiConfig = await platformConfigsTable.findOne({ platform: "gemini", isEnabled: true }).lean() as any;
-    const openaiConfig = await platformConfigsTable.findOne({ platform: "openai", isEnabled: true }).lean() as any;
-    
-    let activeProvider = "mock";
-    let apiKey = "";
-    let model = "";
-
-    if (geminiConfig?.aiConfig?.apiKey) {
-      activeProvider = "gemini";
-      apiKey = decrypt(geminiConfig.aiConfig.apiKey);
-      model = geminiConfig.aiConfig.model || "gemini-1.5-flash";
-    } else if (openaiConfig?.aiConfig?.apiKey) {
-      activeProvider = "openai";
-      apiKey = decrypt(openaiConfig.aiConfig.apiKey);
-      model = openaiConfig.aiConfig.model || "gpt-4o-mini";
-    }
-
     const files = await bulkMediaFilesTable.find({ batchId, workspaceId });
     
     for (const file of files) {
@@ -181,70 +164,27 @@ router.post("/workspaces/:workspaceId/bulk-batches/:batchId/process-ai", require
       let audience = "All Audiences";
 
       try {
-        if (activeProvider === "gemini") {
-          // Trigger Gemini content analysis
-          const prompt = `Analyze this file named "${file.filename}". Generate a highly engaging social media caption, 5 relevant hashtags, 5 keywords, an optimized Call to Action (CTA), content category, and target audience type. Return the result strictly in JSON format matching this schema:
-          {
-            "caption": "your caption text",
-            "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-            "keywords": ["word1", "word2"],
-            "cta": "your call to action",
-            "category": "category name",
-            "audience": "audience descriptor"
-          }`;
+        const prompt = `Analyze this file named "${file.filename}". Generate a highly engaging social media caption, 5 relevant hashtags, 5 keywords, an optimized Call to Action (CTA), content category, and target audience type. Return the result strictly in JSON format matching this schema:
+        {
+          "caption": "your caption text",
+          "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+          "keywords": ["word1", "word2"],
+          "cta": "your call to action",
+          "category": "category name",
+          "audience": "audience descriptor"
+        }
+        Respond with raw JSON only (do not wrap in markdown code blocks like \`\`\`json).`;
 
-          const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { responseMimeType: "application/json" }
-            })
-          });
-
-          if (geminiRes.ok) {
-            const data = await geminiRes.json() as any;
-            const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (jsonText) {
-              const aiParsed = JSON.parse(jsonText);
-              caption = aiParsed.caption || caption;
-              hashtags = aiParsed.hashtags || hashtags;
-              keywords = aiParsed.keywords || keywords;
-              cta = aiParsed.cta || cta;
-              category = aiParsed.category || category;
-              audience = aiParsed.audience || audience;
-            }
-          }
-        } else if (activeProvider === "openai") {
-          const openAiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model,
-              messages: [{
-                role: "user",
-                content: `Analyze this file named "${file.filename}". Generate caption, hashtags (list), keywords (list), CTA, category, audience. Respond strictly in JSON format: { "caption": "", "hashtags": [], "keywords": [], "cta": "", "category": "", "audience": "" }`
-              }],
-              response_format: { type: "json_object" }
-            })
-          });
-
-          if (openAiRes.ok) {
-            const data = await openAiRes.json() as any;
-            const jsonText = data.choices?.[0]?.message?.content;
-            if (jsonText) {
-              const aiParsed = JSON.parse(jsonText);
-              caption = aiParsed.caption || caption;
-              hashtags = aiParsed.hashtags || hashtags;
-              keywords = aiParsed.keywords || keywords;
-              cta = aiParsed.cta || cta;
-              category = aiParsed.category || category;
-              audience = aiParsed.audience || audience;
-            }
-          }
+        const jsonTextResponse = await callAiTextProvider(prompt, true);
+        if (jsonTextResponse) {
+          const cleanJson = jsonTextResponse.replace(/```json|```/g, "").trim();
+          const aiParsed = JSON.parse(cleanJson);
+          caption = aiParsed.caption || caption;
+          hashtags = aiParsed.hashtags || hashtags;
+          keywords = aiParsed.keywords || keywords;
+          cta = aiParsed.cta || cta;
+          category = aiParsed.category || category;
+          audience = aiParsed.audience || audience;
         }
       } catch (aiErr) {
         console.error("AI Generation Error for file:", file.filename, aiErr);

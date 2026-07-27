@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { aiLogsTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 import { GenerateCaptionBody, GenerateHashtagsBody, RewriteContentBody, GenerateAiImageBody } from "@workspace/api-zod";
+import { callAiTextProvider, callAiImageProvider } from "../lib/ai-helpers";
 
 const router: IRouter = Router();
 
@@ -36,12 +37,24 @@ router.post("/ai/generate-caption", requireAuth, async (req: AuthenticatedReques
   }
   const { topic, platform, tone } = parsed.data;
   const platformName = PLATFORM_PROMPTS[platform] ?? platform;
-  
-  // Generate contextual caption based on topic and platform
-  const captions = generateContextualCaption(topic, platformName, tone ?? "professional");
-  
-  await logAiUsage(req.userId!, "caption", `${topic} for ${platform}`, captions[0]);
-  res.json({ text: captions[0], alternatives: captions.slice(1) });
+  const toneInstruction = TONES[tone ?? "professional"] ?? TONES.professional;
+
+  try {
+    const prompt = `Write a highly engaging caption for ${platformName} about: "${topic}".
+    ${toneInstruction}
+    Optimize it with clean line breaks and emojis suitable for ${platformName}.
+    Provide the response as a single caption block.`;
+
+    const text = await callAiTextProvider(prompt, false);
+    
+    await logAiUsage(req.userId!, "caption", `${topic} for ${platform}`, text);
+    res.json({ text, alternatives: [] });
+  } catch (err: any) {
+    console.error("AI caption generation error, falling back:", err);
+    // Dynamic fallback
+    const fallback = generateContextualCaption(topic, platformName, tone ?? "professional")[0];
+    res.json({ text: fallback, alternatives: [] });
+  }
 });
 
 router.post("/ai/generate-hashtags", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
@@ -51,9 +64,19 @@ router.post("/ai/generate-hashtags", requireAuth, async (req: AuthenticatedReque
     return;
   }
   const { topic, platform, count = 15 } = parsed.data;
-  const hashtags = generateHashtags(topic, platform, count);
-  await logAiUsage(req.userId!, "hashtags", `${topic} on ${platform}`, hashtags.join(" "));
-  res.json({ hashtags });
+
+  try {
+    const prompt = `Generate exactly ${count} highly trending hashtags for a post on ${platform} about: "${topic}". Return only the hashtag list separated by spaces, no commentary.`;
+    const response = await callAiTextProvider(prompt, false);
+    const hashtags = response.match(/#\w+/g) || response.split(/\s+/).map(t => t.startsWith("#") ? t : `#${t}`);
+    
+    await logAiUsage(req.userId!, "hashtags", `${topic} on ${platform}`, hashtags.join(" "));
+    res.json({ hashtags });
+  } catch (err: any) {
+    console.error("AI hashtag generation error, falling back:", err);
+    const fallback = generateHashtags(topic, platform, count);
+    res.json({ hashtags: fallback });
+  }
 });
 
 router.post("/ai/rewrite", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
@@ -63,9 +86,21 @@ router.post("/ai/rewrite", requireAuth, async (req: AuthenticatedRequest, res): 
     return;
   }
   const { content, tone } = parsed.data;
-  const rewritten = rewriteContent(content, tone);
-  await logAiUsage(req.userId!, "rewrite", content.slice(0, 100), rewritten);
-  res.json({ text: rewritten, alternatives: [] });
+  const toneInstruction = TONES[tone ?? "professional"] ?? TONES.professional;
+
+  try {
+    const prompt = `Rewrite the following social media post content: "${content}".
+    Apply the following style change: ${toneInstruction}.
+    Keep it close in length but make it more impactful.`;
+    const rewritten = await callAiTextProvider(prompt, false);
+
+    await logAiUsage(req.userId!, "rewrite", content.slice(0, 100), rewritten);
+    res.json({ text: rewritten, alternatives: [] });
+  } catch (err: any) {
+    console.error("AI rewrite error, falling back:", err);
+    const fallback = rewriteContent(content, tone);
+    res.json({ text: fallback, alternatives: [] });
+  }
 });
 
 router.post("/ai/generate-image", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
@@ -75,10 +110,16 @@ router.post("/ai/generate-image", requireAuth, async (req: AuthenticatedRequest,
     return;
   }
   const { prompt } = parsed.data;
-  // Return a placeholder image URL for now
-  const imageUrl = `https://picsum.photos/seed/${encodeURIComponent(prompt.slice(0, 10))}/800/800`;
-  await logAiUsage(req.userId!, "image", prompt, imageUrl);
-  res.json({ imageUrl, prompt });
+
+  try {
+    const imageUrl = await callAiImageProvider(prompt);
+    await logAiUsage(req.userId!, "image", prompt, imageUrl);
+    res.json({ imageUrl, prompt });
+  } catch (err: any) {
+    console.error("AI Image generation error, falling back:", err);
+    const imageUrl = `https://picsum.photos/seed/${encodeURIComponent(prompt.slice(0, 10))}/800/800`;
+    res.json({ imageUrl, prompt });
+  }
 });
 
 router.get("/ai/history", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
