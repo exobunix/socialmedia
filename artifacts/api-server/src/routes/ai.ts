@@ -110,11 +110,13 @@ router.post("/ai/generate-image", requireAuth, async (req: AuthenticatedRequest,
     return;
   }
   const { prompt } = parsed.data;
+  const style = req.body.style;
+  const finalPrompt = style ? `${prompt} (Visual Style: ${style})` : prompt;
 
   try {
-    const imageUrl = await callAiImageProvider(prompt);
-    await logAiUsage(req.userId!, "image", prompt, imageUrl);
-    res.json({ imageUrl, prompt });
+    const imageUrl = await callAiImageProvider(finalPrompt);
+    await logAiUsage(req.userId!, "image", finalPrompt, imageUrl);
+    res.json({ imageUrl, prompt: finalPrompt });
   } catch (err: any) {
     console.error("AI Image generation error:", err);
     res.status(500).json({ error: err.message || "Failed to generate AI image" });

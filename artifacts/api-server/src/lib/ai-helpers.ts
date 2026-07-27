@@ -247,6 +247,34 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
     }
   }
 
+  if (geminiConfig?.aiConfig?.apiKey) {
+    try {
+      const apiKey = decrypt(geminiConfig.aiConfig.apiKey);
+      let model = geminiConfig.aiConfig.model || "imagen-3.0-generate-002";
+      if (!model.trim().toLowerCase().startsWith("imagen-")) {
+        model = "imagen-3.0-generate-002";
+      }
+      console.log(`Routing image generation to Gemini Imagen (${model})`);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instances: [{ prompt: optimizedPrompt }],
+          parameters: { sampleCount: 1 }
+        })
+      });
+      const data = await res.json() as any;
+      if (res.ok && data.predictions?.[0]?.bytesBase64Encoded) {
+        return `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
+      }
+      console.error("Gemini Imagen failed:", data.error?.message);
+      lastError = new Error(data.error?.message || "Gemini Imagen failed");
+    } catch (err: any) {
+      console.error("Gemini Imagen generation error:", err);
+      lastError = err;
+    }
+  }
+
   if (fluxConfig?.aiConfig?.apiKey) {
     try {
       const apiKey = decrypt(fluxConfig.aiConfig.apiKey);
@@ -303,34 +331,6 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
       return `data:image/jpeg;base64,${base64}`;
     } catch (err: any) {
       console.error("Stable Diffusion image generation SDK error:", err);
-      lastError = err;
-    }
-  }
-
-  if (geminiConfig?.aiConfig?.apiKey) {
-    try {
-      const apiKey = decrypt(geminiConfig.aiConfig.apiKey);
-      let model = geminiConfig.aiConfig.model || "imagen-3.0-generate-002";
-      if (!model.trim().toLowerCase().startsWith("imagen-")) {
-        model = "imagen-3.0-generate-002";
-      }
-      console.log(`Routing image generation to Gemini Imagen (${model})`);
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instances: [{ prompt: optimizedPrompt }],
-          parameters: { sampleCount: 1 }
-        })
-      });
-      const data = await res.json() as any;
-      if (res.ok && data.predictions?.[0]?.bytesBase64Encoded) {
-        return `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
-      }
-      console.error("Gemini Imagen failed:", data.error?.message);
-      lastError = new Error(data.error?.message || "Gemini Imagen failed");
-    } catch (err: any) {
-      console.error("Gemini Imagen generation error:", err);
       lastError = err;
     }
   }
