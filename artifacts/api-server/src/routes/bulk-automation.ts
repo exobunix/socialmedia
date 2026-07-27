@@ -151,14 +151,14 @@ router.post("/workspaces/:workspaceId/bulk-batches/:batchId/process-ai", require
         .replace(/[_-]+/g, " ") // replace underscores/hyphens with spaces
         .replace(/\b(1080p|720p|4k|video|mvp|mp4|avi|mov|hd|clip|2026\d+)\b/gi, "") // strip tags/timestamps
         .trim()
-        .replace(/\b\w/g, c => c.toUpperCase()); // capitalize words
+        .replace(/\b\w/g, (c: string) => c.toUpperCase()); // capitalize words
 
       let caption = file.type === "video" 
         ? `🎥 Check out our new video: "${cleanTitle}"! Discover the key highlights and share your thoughts in the comments below! 🚀`
         : `📸 New Post: "${cleanTitle}"! Taking a closer look at this today. What do you think? ✨`;
         
       let hashtags = [cleanTitle.split(" ")[0].toLowerCase(), "socialflow", "automation", "viral", file.type];
-      let keywords = cleanTitle.split(" ").filter(w => w.length > 2);
+      let keywords = cleanTitle.split(" ").filter((w: string) => w.length > 2);
       let cta = file.type === "video" ? "Watch the full video now!" : "Click link to learn more!";
       let category = "General";
       let audience = "All Audiences";
