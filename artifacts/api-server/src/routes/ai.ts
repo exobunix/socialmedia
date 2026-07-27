@@ -116,7 +116,7 @@ router.post("/ai/generate-image", requireAuth, async (req: AuthenticatedRequest,
   try {
     const imageUrl = await callAiImageProvider(finalPrompt);
     await logAiUsage(req.userId!, "image", finalPrompt, imageUrl);
-    res.json({ imageUrl, prompt: finalPrompt });
+    res.json({ imageUrl, prompt });
   } catch (err: any) {
     console.error("AI Image generation error:", err);
     res.status(500).json({ error: err.message || "Failed to generate AI image" });
