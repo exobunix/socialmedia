@@ -15,7 +15,8 @@ import {
   Clock, 
   Play, 
   Check, 
-  AlertTriangle 
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 
 interface UploadedMedia {
