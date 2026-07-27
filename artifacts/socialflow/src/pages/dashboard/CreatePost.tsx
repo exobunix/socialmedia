@@ -51,6 +51,39 @@ export function CreatePost() {
     fileInputRef.current?.click();
   };
 
+  const compressImage = (base64Str: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -60,8 +93,12 @@ export function CreatePost() {
 
     reader.onload = async () => {
       try {
-        const base64Data = reader.result as string;
+        let base64Data = reader.result as string;
         const type = file.type.startsWith("video/") ? "video" : "image";
+
+        if (type === "image") {
+          base64Data = await compressImage(base64Data);
+        }
 
         // Register upload metadata and data URL on backend
         const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/media`), {
