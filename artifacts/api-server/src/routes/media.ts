@@ -3,13 +3,47 @@ import { mediaFilesTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 import { ListMediaParams, UploadMediaParams, UploadMediaBody, DeleteMediaParams } from "@workspace/api-zod";
 import "../lib/env-loader";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import { execFile } from "child_process";
 import fs from "fs";
 import path from "path";
 import os from "os";
 
-const ffmpegPath = ffmpegInstaller.path;
+// Custom resolver to find ffmpeg in a pnpm monorepo structure
+function getFFmpegPath(): string {
+  const platform = os.platform();
+  const arch = os.arch();
+  
+  let folderName = "";
+  let binaryName = "ffmpeg";
+  
+  if (platform === "win32") {
+    folderName = "win32-x64";
+    binaryName = "ffmpeg.exe";
+  } else if (platform === "linux") {
+    folderName = arch === "arm64" ? "linux-arm64" : "linux-x64";
+  } else if (platform === "darwin") {
+    folderName = "darwin-x64";
+  }
+  
+  // Monorepos place dependencies at the root level, so we look up multiple parent directories
+  const possiblePaths = [
+    path.resolve(process.cwd(), "node_modules", `@ffmpeg-installer/${folderName}`, binaryName),
+    path.resolve(process.cwd(), "../node_modules", `@ffmpeg-installer/${folderName}`, binaryName),
+    path.resolve(process.cwd(), "../../node_modules", `@ffmpeg-installer/${folderName}`, binaryName),
+    path.resolve(process.cwd(), "../../../node_modules", `@ffmpeg-installer/${folderName}`, binaryName),
+  ];
+  
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      console.log("Resolved static ffmpeg path:", p);
+      return p;
+    }
+  }
+  
+  return "ffmpeg"; // Fallback to system-level ffmpeg path if not found in node_modules
+}
+
+const ffmpegPath = getFFmpegPath();
 const router: IRouter = Router();
 
 async function compressVideo(base64Data: string): Promise<string> {
