@@ -172,6 +172,16 @@ export async function callAiTextProvider(prompt: string, isJson = false): Promis
 
 // 3. Call active image generator (DALL-E 3 on OpenAI, or Imagen on Gemini)
 export async function callAiImageProvider(prompt: string): Promise<string> {
+  let optimizedPrompt = prompt;
+  try {
+    console.log("Optimizing image generation prompt using active LLM...");
+    const systemPrompt = "You are an expert prompt engineer for AI image generators (DALL-E 3, Flux, Stable Diffusion). Your task is to rewrite the user's raw input into a detailed, visually stunning, and highly professional image generation prompt. If the user provided a simple description, expand it with rich details, mood, lighting, style (e.g. realistic 3D render, minimalist flat vector, modern tech UI, professional marketing graphic), and composition. If the user provided a conversational message, list of menu options, or business copy, design a clean, premium marketing banner, software UI mockup, or executive landing page graphic representing those services/clones professionally (e.g. Ola/Uber clone, E-commerce, AI tools). Keep the output concise, descriptive, and return ONLY the optimized prompt text without any introductory or conversational text.\n\nUser Input to Optimize:\n" + prompt;
+    optimizedPrompt = await callAiTextProvider(systemPrompt);
+    console.log("Optimized Prompt:", optimizedPrompt);
+  } catch (err) {
+    console.warn("Failed to optimize prompt with LLM, using original prompt:", err);
+  }
+
   // Check image providers: openai (dall-e), gemini (imagen), flux (huggingface), stable_diffusion (huggingface)
   const openaiConfig = await platformConfigsTable.findOne({ platform: "openai", isEnabled: true }).lean() as any;
   const geminiConfig = await platformConfigsTable.findOne({ platform: "imagen", isEnabled: true }).lean() as any;
@@ -198,7 +208,7 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
         },
         body: JSON.stringify({
           model: "dall-e-3",
-          prompt,
+          prompt: optimizedPrompt,
           n: 1,
           size: "1024x1024"
         })
@@ -220,7 +230,7 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
         },
         body: JSON.stringify({
           model: "dall-e-2",
-          prompt,
+          prompt: optimizedPrompt,
           n: 1,
           size: "512x512"
         })
@@ -248,13 +258,13 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
       try {
         blob = await hf.textToImage({
           model,
-          inputs: prompt
+          inputs: optimizedPrompt
         });
       } catch (err: any) {
         console.warn(`Flux model ${model} failed via SDK, trying FLUX.1-schnell fallback...`, err.message || err);
         blob = await hf.textToImage({
           model: "black-forest-labs/FLUX.1-schnell",
-          inputs: prompt
+          inputs: optimizedPrompt
         });
       }
 
@@ -278,13 +288,13 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
       try {
         blob = await hf.textToImage({
           model,
-          inputs: prompt
+          inputs: optimizedPrompt
         });
       } catch (err: any) {
         console.warn(`Stable Diffusion model ${model} failed via SDK, trying SD XL fallback...`, err.message || err);
         blob = await hf.textToImage({
           model: "stabilityai/stable-diffusion-xl-base-1.0",
-          inputs: prompt
+          inputs: optimizedPrompt
         });
       }
 
@@ -309,7 +319,7 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          instances: [{ prompt }],
+          instances: [{ prompt: optimizedPrompt }],
           parameters: { sampleCount: 1 }
         })
       });
@@ -331,5 +341,5 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
   }
 
   // Fallback to high quality Picsum placeholder seed if nothing is configured
-  return `https://picsum.photos/seed/${encodeURIComponent(prompt.slice(0, 15))}/1024/1024`;
+  return `https://picsum.photos/seed/${encodeURIComponent(optimizedPrompt.slice(0, 15))}/1024/1024`;
 }
