@@ -239,11 +239,12 @@ router.post("/workspaces/:workspaceId/bulk-batches/:batchId/generate-thumbnail",
 
     await bulkMediaFilesTable.updateOne({ id: file.id }, { $set: { thumbnailStatus: "generating" } });
 
-    // Mock/Generate visual thumbnail:
-    // In standard cases we generate an Imagen or stable diffusion placeholder/template
-    // Let's set a beautiful placeholder thumbnail matching the video name
-    const coverName = encodeURIComponent(file.filename.split('.')[0]);
-    const mockCoverUrl = `https://ik.imagekit.io/smcdngw8m/tr:w-1280,h-720,co-FFFFFF,fs-40,ot-${coverName}/Social_Media_Automation/placeholder.jpg`;
+    // Generate visual thumbnail using ImageKit's native video frame extractor or the original image
+    let mockCoverUrl = file.url;
+    if (file.type === "video") {
+      const cleanUrl = file.url.split("?")[0];
+      mockCoverUrl = `${cleanUrl}/ik-thumbnail.jpg`;
+    }
 
     await bulkMediaFilesTable.updateOne(
       { id: file.id },

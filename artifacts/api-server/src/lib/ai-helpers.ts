@@ -10,6 +10,25 @@ function getDefaultModel(provider: string): string {
   }
 }
 
+function getSanitizedModel(provider: string, model: string): string {
+  const m = model ? model.trim().toLowerCase() : "";
+  if (!m) return getDefaultModel(provider);
+
+  if (provider === "gemini" && !m.startsWith("gemini-")) {
+    return "gemini-1.5-flash";
+  }
+  if (provider === "openai" && !m.startsWith("gpt-") && !m.startsWith("o1-")) {
+    return "gpt-4o-mini";
+  }
+  if (provider === "claude" && !m.startsWith("claude-")) {
+    return "claude-3-5-sonnet-latest";
+  }
+  if (provider === "groq" && !m.startsWith("llama") && !m.startsWith("mixtral") && !m.startsWith("gemma")) {
+    return "llama3-8b-8192";
+  }
+  return model;
+}
+
 // 1. Get the first active enabled text provider
 export async function getActiveTextProvider() {
   const providers = ["gemini", "openai", "claude", "groq"];
@@ -21,7 +40,7 @@ export async function getActiveTextProvider() {
         return {
           provider: p,
           apiKey,
-          model: config.aiConfig.model || getDefaultModel(p),
+          model: getSanitizedModel(p, config.aiConfig.model),
           promptTemplate: config.aiConfig.promptTemplate || ""
         };
       } catch (err) {
