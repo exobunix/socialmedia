@@ -163,11 +163,18 @@ export async function callAiTextProvider(prompt: string, isJson = false): Promis
 
 // 3. Call active image generator (DALL-E 3 on OpenAI, or Imagen on Gemini)
 export async function callAiImageProvider(prompt: string): Promise<string> {
-  // Check image providers: openai (dall-e), gemini (imagen)
+  // Check image providers: openai (dall-e), gemini (imagen), flux (huggingface), stable_diffusion (huggingface)
   const openaiConfig = await platformConfigsTable.findOne({ platform: "openai", isEnabled: true }).lean() as any;
   const geminiConfig = await platformConfigsTable.findOne({ platform: "gemini", isEnabled: true }).lean() as any;
+  const fluxConfig = await platformConfigsTable.findOne({ platform: "flux", isEnabled: true }).lean() as any;
+  const sdConfig = await platformConfigsTable.findOne({ platform: "stable_diffusion", isEnabled: true }).lean() as any;
 
-  const hasConfiguredProviders = !!(openaiConfig?.aiConfig?.apiKey || geminiConfig?.aiConfig?.apiKey);
+  const hasConfiguredProviders = !!(
+    openaiConfig?.aiConfig?.apiKey ||
+    geminiConfig?.aiConfig?.apiKey ||
+    fluxConfig?.aiConfig?.apiKey ||
+    sdConfig?.aiConfig?.apiKey
+  );
   let lastError: any = null;
 
   if (openaiConfig?.aiConfig?.apiKey) {
@@ -217,6 +224,60 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
       lastError = new Error(data.error?.message || "OpenAI DALL-E 2 failed");
     } catch (err: any) {
       console.error("OpenAI image generation error:", err);
+      lastError = err;
+    }
+  }
+
+  if (fluxConfig?.aiConfig?.apiKey) {
+    try {
+      const apiKey = decrypt(fluxConfig.aiConfig.apiKey);
+      const model = fluxConfig.aiConfig.model || "black-forest-labs/FLUX.1-dev";
+      console.log(`Routing image generation to Hugging Face Flux (${model})`);
+      const res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ inputs: prompt })
+      });
+      if (res.ok) {
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+        return `data:image/jpeg;base64,${base64}`;
+      }
+      const errText = await res.text();
+      console.error("Hugging Face Flux failed:", errText);
+      lastError = new Error(errText || "Hugging Face Flux failed");
+    } catch (err: any) {
+      console.error("Flux image generation error:", err);
+      lastError = err;
+    }
+  }
+
+  if (sdConfig?.aiConfig?.apiKey) {
+    try {
+      const apiKey = decrypt(sdConfig.aiConfig.apiKey);
+      const model = sdConfig.aiConfig.model || "stabilityai/stable-diffusion-3.5-large";
+      console.log(`Routing image generation to Hugging Face Stable Diffusion (${model})`);
+      const res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ inputs: prompt })
+      });
+      if (res.ok) {
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+        return `data:image/jpeg;base64,${base64}`;
+      }
+      const errText = await res.text();
+      console.error("Hugging Face Stable Diffusion failed:", errText);
+      lastError = new Error(errText || "Hugging Face Stable Diffusion failed");
+    } catch (err: any) {
+      console.error("Stable Diffusion image generation error:", err);
       lastError = err;
     }
   }
