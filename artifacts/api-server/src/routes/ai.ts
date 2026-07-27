@@ -116,9 +116,8 @@ router.post("/ai/generate-image", requireAuth, async (req: AuthenticatedRequest,
     await logAiUsage(req.userId!, "image", prompt, imageUrl);
     res.json({ imageUrl, prompt });
   } catch (err: any) {
-    console.error("AI Image generation error, falling back:", err);
-    const imageUrl = `https://picsum.photos/seed/${encodeURIComponent(prompt.slice(0, 10))}/800/800`;
-    res.json({ imageUrl, prompt });
+    console.error("AI Image generation error:", err);
+    res.status(500).json({ error: err.message || "Failed to generate AI image" });
   }
 });
 

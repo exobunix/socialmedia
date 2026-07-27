@@ -130,8 +130,9 @@ export function AiStudio() {
         setGeneratedImageUrl(data.imageUrl);
         toast.success("Image generated successfully!");
       },
-      onError: () => {
-        toast.error("Failed to generate AI image");
+      onError: (err: any) => {
+        const errorMsg = err.response?.data?.error || err.message || "Failed to generate AI image";
+        toast.error(`Failed to generate AI image: ${errorMsg}`);
       },
       onSettled: () => setImageLoading(false)
     });

@@ -167,11 +167,14 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
   const openaiConfig = await platformConfigsTable.findOne({ platform: "openai", isEnabled: true }).lean() as any;
   const geminiConfig = await platformConfigsTable.findOne({ platform: "gemini", isEnabled: true }).lean() as any;
 
+  const hasConfiguredProviders = !!(openaiConfig?.aiConfig?.apiKey || geminiConfig?.aiConfig?.apiKey);
+  let lastError: any = null;
+
   if (openaiConfig?.aiConfig?.apiKey) {
     try {
       const apiKey = decrypt(openaiConfig.aiConfig.apiKey);
       console.log("Routing image generation to OpenAI DALL-E 3");
-      const res = await fetch("https://api.openai.com/v1/images/generations", {
+      let res = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -184,13 +187,37 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
           size: "1024x1024"
         })
       });
-      const data = await res.json() as any;
+      let data = await res.json() as any;
       if (res.ok && data.data?.[0]?.url) {
         return data.data[0].url;
       }
-      console.error("OpenAI DALL-E failed:", data.error?.message);
-    } catch (err) {
+      console.error("OpenAI DALL-E 3 failed:", data.error?.message);
+      lastError = new Error(data.error?.message || "OpenAI DALL-E 3 failed");
+
+      // Fallback to DALL-E 2
+      console.log("Routing image generation fallback to OpenAI DALL-E 2");
+      res = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "dall-e-2",
+          prompt,
+          n: 1,
+          size: "512x512"
+        })
+      });
+      data = await res.json() as any;
+      if (res.ok && data.data?.[0]?.url) {
+        return data.data[0].url;
+      }
+      console.error("OpenAI DALL-E 2 failed:", data.error?.message);
+      lastError = new Error(data.error?.message || "OpenAI DALL-E 2 failed");
+    } catch (err: any) {
       console.error("OpenAI image generation error:", err);
+      lastError = err;
     }
   }
 
@@ -212,11 +239,18 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
         return `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
       }
       console.error("Gemini Imagen failed:", data.error?.message);
-    } catch (err) {
+      lastError = new Error(data.error?.message || "Gemini Imagen failed");
+    } catch (err: any) {
       console.error("Gemini Imagen generation error:", err);
+      lastError = err;
     }
   }
 
-  // Fallback to high quality Picsum placeholder seed
+  // If the user has active providers configured but all failed, throw the error
+  if (hasConfiguredProviders) {
+    throw new Error(`All configured AI Image Providers failed. Last error: ${lastError?.message || lastError}`);
+  }
+
+  // Fallback to high quality Picsum placeholder seed if nothing is configured
   return `https://picsum.photos/seed/${encodeURIComponent(prompt.slice(0, 15))}/1024/1024`;
 }
