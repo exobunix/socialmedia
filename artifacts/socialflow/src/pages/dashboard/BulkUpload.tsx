@@ -124,6 +124,40 @@ export function BulkUpload() {
     }
   };
 
+  const uploadFileWithProgress = (
+    url: string,
+    payload: any,
+    onProgress: (percent: number) => void
+  ): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("socialflow_auth_token")}`);
+      
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      });
+      
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(new Error(xhr.responseText || "Upload failed"));
+        }
+      });
+      
+      xhr.addEventListener("error", () => {
+        reject(new Error("Network error"));
+      });
+      
+      xhr.send(JSON.stringify(payload));
+    });
+  };
+
   const uploadFiles = async (files: File[]) => {
     if (!workspaceId) return;
 
@@ -131,7 +165,6 @@ export function BulkUpload() {
       let batchId = activeBatchId;
 
       if (!batchId) {
-        // Create new batch on-demand
         const batchRes = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches`), {
           method: "POST",
           headers: {
@@ -155,9 +188,9 @@ export function BulkUpload() {
 
       for (const file of files) {
         const type = file.type.startsWith("video/") ? "video" : "image";
+        const tempId = Math.random();
         
         // Add to loading state queue
-        const tempId = Math.random();
         setMediaList(prev => [...prev, {
           id: tempId,
           url: "",
@@ -167,70 +200,67 @@ export function BulkUpload() {
           sizeBytes: file.size,
           status: "pending",
           thumbnailStatus: "none",
-          progress: 10
+          progress: 5
         }]);
 
-        // Upload media to ImageKit
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder", "bulk_uploads");
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64Data = reader.result as string;
+            
+            // Upload to core media endpoint with progress tracking
+            const mediaFile = await uploadFileWithProgress(
+              getApiUrl(`/api/workspaces/${workspaceId}/media`),
+              {
+                url: base64Data,
+                type,
+                filename: file.name,
+                sizeBytes: file.size,
+                mimeType: file.type
+              },
+              (percent) => {
+                setMediaList(prev => prev.map(m => m.id === tempId ? { ...m, progress: percent } : m));
+              }
+            );
 
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", getApiUrl("/api/media/upload"), true);
-        xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("socialflow_auth_token")}`);
+            // Connect to batch
+            const mediaRes = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${batchId}/media`), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
+              },
+              body: JSON.stringify({
+                url: mediaFile.url,
+                fileId: mediaFile.fileId,
+                filename: file.name,
+                sizeBytes: file.size,
+                type,
+                resolution: mediaFile.resolution || (type === "video" ? "1280x720" : "1920x1080"),
+                duration: mediaFile.duration || (type === "video" ? 10 : null)
+              })
+            });
 
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const pct = Math.round((event.loaded / event.total) * 100);
-            setMediaList(prev => prev.map(m => m.id === tempId ? { ...m, progress: pct } : m));
+            if (mediaRes.ok) {
+              const savedMedia = await mediaRes.json();
+              setMediaList(prev => prev.map(m => m.id === tempId ? savedMedia : m));
+            } else {
+              throw new Error("Failed to register media file with batch");
+            }
+          } catch (err) {
+            console.error(err);
+            setMediaList(prev => prev.map(m => m.id === tempId ? { ...m, status: "failed" } : m));
+            toast.error(`Failed to upload ${file.name}`);
           }
         };
 
-        const uploadPromise = new Promise<any>((resolve, reject) => {
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve(JSON.parse(xhr.responseText));
-            } else {
-              reject(new Error(xhr.responseText || "Upload failed"));
-            }
-          };
-          xhr.onerror = () => reject(new Error("Network Error"));
-          xhr.send(formData);
-        });
-
-        try {
-          const uploadedRes = await uploadPromise;
-          
-          // Connect to batch
-          const mediaRes = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${batchId}/media`), {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
-            },
-            body: JSON.stringify({
-              url: uploadedRes.url,
-              fileId: uploadedRes.fileId,
-              filename: file.name,
-              sizeBytes: file.size,
-              type,
-              resolution: type === "video" ? "1280x720" : "1920x1080",
-              duration: type === "video" ? 10 : null
-            })
-          });
-
-          if (mediaRes.ok) {
-            const savedMedia = await mediaRes.json();
-            setMediaList(prev => prev.map(m => m.id === tempId ? savedMedia : m));
-          }
-        } catch (err) {
-          console.error(err);
+        reader.onerror = () => {
           setMediaList(prev => prev.map(m => m.id === tempId ? { ...m, status: "failed" } : m));
-          toast.error(`Failed to upload ${file.name}`);
-        }
-      }
+          toast.error(`Failed to read file ${file.name}`);
+        };
 
-      toast.success("All uploads completed!");
+        reader.readAsDataURL(file);
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed during uploads batch creation");
     }
@@ -579,6 +609,11 @@ export function BulkUpload() {
                         ) : (
                           <img src={m.url} className="w-full h-full object-cover" alt="Uploaded Preview" />
                         )
+                      ) : m.status === "failed" ? (
+                        <div className="flex flex-col items-center gap-2 text-destructive">
+                          <AlertTriangle className="w-8 h-8" />
+                          <span className="text-[10px]">Upload Failed</span>
+                        </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
                           <Loader2 className="w-8 h-8 animate-spin text-primary" />
