@@ -21,6 +21,214 @@ interface AiConfigData {
   };
 }
 
+interface ProviderCardProps {
+  platform: string;
+  data: AiConfigData;
+  testingPlatform: string | null;
+  handleTestConnection: (platform: string, config: any) => Promise<void>;
+  handleSave: (platform: string, updatedConfig: any) => Promise<void>;
+}
+
+// 1. Text provider sub-component to resolve Rules of Hooks violation
+function TextProviderCard({ platform, data, testingPlatform, handleTestConnection, handleSave }: ProviderCardProps) {
+  const [apiKey, setApiKey] = useState(data.aiConfig?.apiKey || "");
+  const [model, setModel] = useState(data.aiConfig?.model || "");
+  const [promptTemplate, setPromptTemplate] = useState(data.aiConfig?.promptTemplate || "");
+  const [isEnabled, setIsEnabled] = useState(data.isEnabled);
+
+  // Sync state if backend data updates
+  useEffect(() => {
+    setApiKey(data.aiConfig?.apiKey || "");
+    setModel(data.aiConfig?.model || "");
+    setPromptTemplate(data.aiConfig?.promptTemplate || "");
+    setIsEnabled(data.isEnabled);
+  }, [data]);
+
+  return (
+    <Card className="bg-card/50 backdrop-blur border-border/40 text-left">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="capitalize text-sm font-bold">{platform}</CardTitle>
+          <CardDescription className="text-[11px]">AI text generator</CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          {data.aiConfig?.testConnectionStatus === "connected" && (
+            <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <CheckCircle className="w-3 h-3" /> Connected
+            </span>
+          )}
+          {data.aiConfig?.testConnectionStatus === "failed" && (
+            <span className="flex items-center gap-1 text-[10px] text-red-500 font-medium bg-red-500/10 px-2 py-0.5 rounded-full">
+              <XCircle className="w-3 h-3" /> Failed
+            </span>
+          )}
+          <input 
+            type="checkbox" 
+            checked={isEnabled} 
+            onChange={(e) => setIsEnabled(e.target.checked)}
+            className="rounded border-input bg-background w-4 h-4 text-primary focus:ring-primary cursor-pointer"
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1">
+          <Label className="text-xs">API Key</Label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            placeholder="••••••••••••••••"
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Model Name</Label>
+          <input
+            type="text"
+            value={model}
+            onChange={e => setModel(e.target.value)}
+            placeholder={platform === "gemini" ? "gemini-1.5-flash" : platform === "openai" ? "gpt-4o-mini" : "default-model"}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Custom Prompt Template (Optional)</Label>
+          <textarea
+            value={promptTemplate}
+            onChange={e => setPromptTemplate(e.target.value)}
+            placeholder="Translate this caption into a viral social media post..."
+            rows={2}
+            className="flex w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+        <div className="flex gap-2 justify-end pt-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="h-8 text-xs"
+            disabled={testingPlatform === platform}
+            onClick={() => handleTestConnection(platform, { apiKey, model })}
+          >
+            {testingPlatform === platform ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Testing
+              </>
+            ) : "Test Connection"}
+          </Button>
+          <Button 
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => handleSave(platform, { apiKey, model, promptTemplate, isEnabled })}
+          >
+            Save Settings
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// 2. Image provider sub-component to resolve Rules of Hooks violation
+function ImageProviderCard({ platform, data, testingPlatform, handleTestConnection, handleSave }: ProviderCardProps) {
+  const [apiKey, setApiKey] = useState(data.aiConfig?.apiKey || "");
+  const [model, setModel] = useState(data.aiConfig?.model || "");
+  const [resolution, setResolution] = useState(data.aiConfig?.resolution || "1280x720");
+  const [isEnabled, setIsEnabled] = useState(data.isEnabled);
+
+  // Sync state if backend data updates
+  useEffect(() => {
+    setApiKey(data.aiConfig?.apiKey || "");
+    setModel(data.aiConfig?.model || "");
+    setResolution(data.aiConfig?.resolution || "1280x720");
+    setIsEnabled(data.isEnabled);
+  }, [data]);
+
+  return (
+    <Card className="bg-card/50 backdrop-blur border-border/40 text-left">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="capitalize text-sm font-bold">{platform}</CardTitle>
+          <CardDescription className="text-[11px]">AI Cover/Image generator</CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          {data.aiConfig?.testConnectionStatus === "connected" && (
+            <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <CheckCircle className="w-3 h-3" /> Connected
+            </span>
+          )}
+          {data.aiConfig?.testConnectionStatus === "failed" && (
+            <span className="flex items-center gap-1 text-[10px] text-red-500 font-medium bg-red-500/10 px-2 py-0.5 rounded-full">
+              <XCircle className="w-3 h-3" /> Failed
+            </span>
+          )}
+          <input 
+            type="checkbox" 
+            checked={isEnabled} 
+            onChange={(e) => setIsEnabled(e.target.checked)}
+            className="rounded border-input bg-background w-4 h-4 text-primary focus:ring-primary cursor-pointer"
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1">
+          <Label className="text-xs">API Key</Label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            placeholder="••••••••••••••••"
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Model Name</Label>
+          <input
+            type="text"
+            value={model}
+            onChange={e => setModel(e.target.value)}
+            placeholder={platform === "imagen" ? "imagen-3.0" : "flux-schnell"}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Resolution</Label>
+          <select
+            value={resolution}
+            onChange={e => setResolution(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="1280x720">Landscape (1280x720)</option>
+            <option value="720x1280">Portrait (720x1280)</option>
+            <option value="1024x1024">Square (1024x1024)</option>
+          </select>
+        </div>
+        <div className="flex gap-2 justify-end pt-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="h-8 text-xs"
+            disabled={testingPlatform === platform}
+            onClick={() => handleTestConnection(platform, { apiKey, model })}
+          >
+            {testingPlatform === platform ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Testing
+              </>
+            ) : "Test Connection"}
+          </Button>
+          <Button 
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => handleSave(platform, { apiKey, model, resolution, isEnabled })}
+          >
+            Save Settings
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AdminAiProviders() {
   const [configs, setConfigs] = useState<AiConfigData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,7 +347,6 @@ export function AdminAiProviders() {
     );
   }
 
-  // Group platforms into Categories
   const textProviders = ["gemini", "openai", "claude", "deepseek", "groq", "openrouter"];
   const imageProviders = ["imagen", "flux", "stable_diffusion", "ideogram", "recraft"];
 
@@ -156,94 +363,16 @@ export function AdminAiProviders() {
           Text & Caption Generation Providers
         </h2>
         <div className="grid gap-6 md:grid-cols-2">
-          {textProviders.map(p => {
-            const data = getOrInitConfig(p);
-            const [apiKey, setApiKey] = useState(data.aiConfig?.apiKey || "");
-            const [model, setModel] = useState(data.aiConfig?.model || "");
-            const [promptTemplate, setPromptTemplate] = useState(data.aiConfig?.promptTemplate || "");
-            const [isEnabled, setIsEnabled] = useState(data.isEnabled);
-
-            return (
-              <Card key={p} className="bg-card/50 backdrop-blur border-border/40">
-                <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle className="capitalize">{p}</CardTitle>
-                    <CardDescription>AI text generator</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {data.aiConfig?.testConnectionStatus === "connected" && (
-                      <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                        <CheckCircle className="w-3 h-3" /> Connected
-                      </span>
-                    )}
-                    {data.aiConfig?.testConnectionStatus === "failed" && (
-                      <span className="flex items-center gap-1 text-[10px] text-red-500 font-medium bg-red-500/10 px-2 py-0.5 rounded-full">
-                        <XCircle className="w-3 h-3" /> Failed
-                      </span>
-                    )}
-                    <input 
-                      type="checkbox" 
-                      checked={isEnabled} 
-                      onChange={(e) => setIsEnabled(e.target.checked)}
-                      className="rounded border-input bg-background w-4 h-4 text-primary focus:ring-primary"
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">API Key</Label>
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={e => setApiKey(e.target.value)}
-                      placeholder="••••••••••••••••"
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Model Name</Label>
-                    <input
-                      type="text"
-                      value={model}
-                      onChange={e => setModel(e.target.value)}
-                      placeholder={p === "gemini" ? "gemini-1.5-flash" : p === "openai" ? "gpt-4o-mini" : "default-model"}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Custom Prompt Template (Optional)</Label>
-                    <textarea
-                      value={promptTemplate}
-                      onChange={e => setPromptTemplate(e.target.value)}
-                      placeholder="Translate this caption into a viral social media post..."
-                      rows={2}
-                      className="flex w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end pt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={testingPlatform === p}
-                      onClick={() => handleTestConnection(p, { apiKey, model })}
-                    >
-                      {testingPlatform === p ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Testing
-                        </>
-                      ) : "Test Connection"}
-                    </Button>
-                    <Button 
-                      size="sm"
-                      onClick={() => handleSave(p, { apiKey, model, promptTemplate, isEnabled })}
-                    >
-                      Save Settings
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {textProviders.map(p => (
+            <TextProviderCard 
+              key={p}
+              platform={p}
+              data={getOrInitConfig(p)}
+              testingPlatform={testingPlatform}
+              handleTestConnection={handleTestConnection}
+              handleSave={handleSave}
+            />
+          ))}
         </div>
       </div>
 
@@ -253,96 +382,16 @@ export function AdminAiProviders() {
           Image & Video Thumbnail Generation Providers
         </h2>
         <div className="grid gap-6 md:grid-cols-2">
-          {imageProviders.map(p => {
-            const data = getOrInitConfig(p);
-            const [apiKey, setApiKey] = useState(data.aiConfig?.apiKey || "");
-            const [model, setModel] = useState(data.aiConfig?.model || "");
-            const [resolution, setResolution] = useState(data.aiConfig?.resolution || "1280x720");
-            const [isEnabled, setIsEnabled] = useState(data.isEnabled);
-
-            return (
-              <Card key={p} className="bg-card/50 backdrop-blur border-border/40">
-                <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle className="capitalize">{p}</CardTitle>
-                    <CardDescription>AI Cover/Image generator</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {data.aiConfig?.testConnectionStatus === "connected" && (
-                      <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                        <CheckCircle className="w-3 h-3" /> Connected
-                      </span>
-                    )}
-                    {data.aiConfig?.testConnectionStatus === "failed" && (
-                      <span className="flex items-center gap-1 text-[10px] text-red-500 font-medium bg-red-500/10 px-2 py-0.5 rounded-full">
-                        <XCircle className="w-3 h-3" /> Failed
-                      </span>
-                    )}
-                    <input 
-                      type="checkbox" 
-                      checked={isEnabled} 
-                      onChange={(e) => setIsEnabled(e.target.checked)}
-                      className="rounded border-input bg-background w-4 h-4 text-primary focus:ring-primary"
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">API Key</Label>
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={e => setApiKey(e.target.value)}
-                      placeholder="••••••••••••••••"
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Model Name</Label>
-                    <input
-                      type="text"
-                      value={model}
-                      onChange={e => setModel(e.target.value)}
-                      placeholder={p === "imagen" ? "imagen-3.0" : "flux-schnell"}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Resolution</Label>
-                    <select
-                      value={resolution}
-                      onChange={e => setResolution(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      <option value="1280x720">Landscape (1280x720)</option>
-                      <option value="720x1280">Portrait (720x1280)</option>
-                      <option value="1024x1024">Square (1024x1024)</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2 justify-end pt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled={testingPlatform === p}
-                      onClick={() => handleTestConnection(p, { apiKey, model })}
-                    >
-                      {testingPlatform === p ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Testing
-                        </>
-                      ) : "Test Connection"}
-                    </Button>
-                    <Button 
-                      size="sm"
-                      onClick={() => handleSave(p, { apiKey, model, resolution, isEnabled })}
-                    >
-                      Save Settings
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {imageProviders.map(p => (
+            <ImageProviderCard
+              key={p}
+              platform={p}
+              data={getOrInitConfig(p)}
+              testingPlatform={testingPlatform}
+              handleTestConnection={handleTestConnection}
+              handleSave={handleSave}
+            />
+          ))}
         </div>
       </div>
     </div>
