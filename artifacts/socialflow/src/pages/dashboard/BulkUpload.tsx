@@ -282,9 +282,10 @@ export function BulkUpload() {
   const runAiAnalysis = async () => {
     if (!activeBatchId || !workspaceId) return;
     setIsProcessing(true);
-    toast.info("Running AI content models & vision analyzers on batch...");
+    toast.info("Running Bulk AI Automation (captions, tags & cover thumbnails)...");
 
     try {
+      // 1. Generate AI captions & hashtags
       const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${activeBatchId}/process-ai`), {
         method: "POST",
         headers: {
@@ -292,26 +293,99 @@ export function BulkUpload() {
         }
       });
 
-      if (res.ok) {
-        toast.success("AI Content generation complete!");
-        // Refresh batch files list
-        const filesRes = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${activeBatchId}/files`), {
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
-          }
-        });
-        if (filesRes.ok) {
-          const files = await filesRes.json();
-          setMediaList(files);
+      if (!res.ok) throw new Error("AI Content analysis failed");
+      toast.success("AI captions & hashtags generated!");
+
+      // 2. Fetch files list to identify videos
+      const filesRes = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${activeBatchId}/files`), {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
         }
-      } else {
-        toast.error("AI Analysis failed to process files");
+      });
+      if (!filesRes.ok) throw new Error("Failed to load batch files");
+      const files = await filesRes.json() as UploadedMedia[];
+
+      // 3. Automatically trigger cover thumbnail generation for all video items in the batch
+      const videoFiles = files.filter(f => f.type === "video");
+      if (videoFiles.length > 0) {
+        toast.info(`Generating custom AI thumbnails for ${videoFiles.length} videos...`);
+        
+        // Trigger thumbnail generation in parallel
+        await Promise.all(videoFiles.map(async (vf) => {
+          try {
+            await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${activeBatchId}/generate-thumbnail`), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
+              },
+              body: JSON.stringify({ fileId: vf.id })
+            });
+          } catch (e) {
+            console.error(`Failed to auto-generate thumbnail for video ${vf.id}:`, e);
+          }
+        }));
       }
-    } catch (err) {
+
+      // 4. Refresh final list
+      const finalRes = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${activeBatchId}/files`), {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
+        }
+      });
+      if (finalRes.ok) {
+        const finalFiles = await finalRes.json();
+        setMediaList(finalFiles);
+      }
+      toast.success("Bulk AI Automation finished successfully!");
+    } catch (err: any) {
       console.error(err);
-      toast.error("Error calling AI analysis APIs");
+      toast.error(err.message || "Failed running AI automation");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleToggleVideoType = async (fileId: number, currentType: "video" | "image", currentOrientation: string) => {
+    if (!activeBatchId || !workspaceId) return;
+
+    // Toggle orientation, aspect ratio, and resolution
+    const isShort = currentOrientation === "landscape";
+    
+    const nextOrientation = isShort ? "portrait" : "landscape";
+    const nextAspectRatio = isShort ? "9:16" : "16:9";
+    const nextResolution = isShort ? "1080x1920" : "1920x1080";
+
+    // Optimistically update locally
+    setMediaList(prev => prev.map(m => m.id === fileId ? {
+      ...m,
+      orientation: nextOrientation,
+      aspectRatio: nextAspectRatio,
+      resolution: nextResolution
+    } : m));
+
+    try {
+      const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${activeBatchId}/media/${fileId}`), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
+        },
+        body: JSON.stringify({
+          type: currentType,
+          orientation: nextOrientation,
+          aspectRatio: nextAspectRatio,
+          resolution: nextResolution
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update video properties on server");
+      }
+      toast.success("Video properties updated!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to sync video changes to server");
     }
   };
 
@@ -641,7 +715,21 @@ export function BulkUpload() {
 
                     <CardContent className="p-3 flex-1 flex flex-col justify-between space-y-3">
                       <div>
-                        <h4 className="font-semibold text-xs truncate mb-1">{m.filename}</h4>
+                        <div className="flex justify-between items-start mb-1 gap-2">
+                          <h4 className="font-semibold text-xs truncate max-w-[130px]">{m.filename}</h4>
+                          {m.type === "video" && m.url && (
+                            <button
+                              onClick={() => handleToggleVideoType(m.id, m.type, m.orientation || "landscape")}
+                              className={`text-[9px] px-2 py-0.5 rounded border transition-all font-semibold ${
+                                m.orientation === "portrait"
+                                  ? "bg-primary/20 text-primary border-primary/30"
+                                  : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
+                              }`}
+                            >
+                              {m.orientation === "portrait" ? "Short (9:16)" : "Video (16:9)"}
+                            </button>
+                          )}
+                        </div>
                         
                         {/* Status bar */}
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/30 pb-2 mb-2">

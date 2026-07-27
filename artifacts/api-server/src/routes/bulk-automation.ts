@@ -106,7 +106,34 @@ router.post("/workspaces/:workspaceId/bulk-batches/:batchId/media", requireAuth,
   }
 });
 
-// 4. POST /api/workspaces/:workspaceId/bulk-batches/:batchId/process-ai
+// 4. PUT /api/workspaces/:workspaceId/bulk-batches/:batchId/media/:id
+router.put("/workspaces/:workspaceId/bulk-batches/:batchId/media/:id", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const mediaId = Number(req.params.id);
+  const batchId = Number(req.params.batchId);
+  const workspaceId = Number(req.params.workspaceId);
+  const { type, resolution, aspectRatio, orientation, aiData } = req.body;
+
+  try {
+    const updated = await bulkMediaFilesTable.findOneAndUpdate(
+      { id: mediaId, batchId, workspaceId },
+      { 
+        $set: { 
+          type, 
+          resolution, 
+          aspectRatio, 
+          orientation,
+          ...(aiData ? { aiData } : {})
+        } 
+      },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. POST /api/workspaces/:workspaceId/bulk-batches/:batchId/process-ai
 router.post("/workspaces/:workspaceId/bulk-batches/:batchId/process-ai", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   const batchId = Number(req.params.batchId);
   const workspaceId = Number(req.params.workspaceId);
@@ -135,10 +162,21 @@ router.post("/workspaces/:workspaceId/bulk-batches/:batchId/process-ai", require
     for (const file of files) {
       await bulkMediaFilesTable.updateOne({ id: file.id }, { $set: { status: "processing" } });
 
-      let caption = `Automated post for ${file.filename.split('.')[0]}`;
-      let hashtags = ["socialflow", "automation"];
-      let keywords = ["post", "social"];
-      let cta = "Click link to learn more!";
+      // Build a smart, clean fallback title from the filename
+      const cleanTitle = file.filename
+        .replace(/\.[^/.]+$/, "") // remove extension
+        .replace(/[_-]+/g, " ") // replace underscores/hyphens with spaces
+        .replace(/\b(1080p|720p|4k|video|mvp|mp4|avi|mov|hd|clip|2026\d+)\b/gi, "") // strip tags/timestamps
+        .trim()
+        .replace(/\b\w/g, c => c.toUpperCase()); // capitalize words
+
+      let caption = file.type === "video" 
+        ? `🎥 Check out our new video: "${cleanTitle}"! Discover the key highlights and share your thoughts in the comments below! 🚀`
+        : `📸 New Post: "${cleanTitle}"! Taking a closer look at this today. What do you think? ✨`;
+        
+      let hashtags = [cleanTitle.split(" ")[0].toLowerCase(), "socialflow", "automation", "viral", file.type];
+      let keywords = cleanTitle.split(" ").filter(w => w.length > 2);
+      let cta = file.type === "video" ? "Watch the full video now!" : "Click link to learn more!";
       let category = "General";
       let audience = "All Audiences";
 
