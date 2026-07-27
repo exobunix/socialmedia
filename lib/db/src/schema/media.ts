@@ -9,6 +9,7 @@ export interface MediaFile {
   filename: string;
   sizeBytes?: number | null;
   mimeType?: string | null;
+  fileId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +22,7 @@ const MediaFileSchema = new Schema<MediaFile>({
   filename: { type: String, required: true },
   sizeBytes: { type: Number, default: null },
   mimeType: { type: String, default: null },
+  fileId: { type: String, default: null },
 }, {
   timestamps: true,
   toJSON: {

@@ -34,6 +34,7 @@ export function CreatePost() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["x"]);
   const [mediaList, setMediaList] = useState<UploadedMedia[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const togglePlatform = (platform: string) => {
     if (selectedPlatforms.includes(platform)) {
@@ -49,6 +50,40 @@ export function CreatePost() {
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const uploadFileWithProgress = (
+    url: string,
+    payload: any,
+    onProgress: (percent: number) => void
+  ): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("socialflow_auth_token")}`);
+      
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      });
+      
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(new Error(xhr.responseText || "Upload failed"));
+        }
+      });
+      
+      xhr.addEventListener("error", () => {
+        reject(new Error("Network error"));
+      });
+      
+      xhr.send(JSON.stringify(payload));
+    });
   };
 
   const compressImage = (base64Str: string): Promise<string> => {
@@ -89,6 +124,7 @@ export function CreatePost() {
     if (!file) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
     const reader = new FileReader();
 
     reader.onload = async () => {
@@ -101,23 +137,19 @@ export function CreatePost() {
         }
 
         // Register upload metadata and data URL on backend
-        const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/media`), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
-          },
-          body: JSON.stringify({
+        const mediaFile = await uploadFileWithProgress(
+          getApiUrl(`/api/workspaces/${workspaceId}/media`),
+          {
             url: base64Data,
             type,
             filename: file.name,
             sizeBytes: file.size,
             mimeType: file.type
-          })
-        });
-
-        if (!res.ok) throw new Error("Failed to register media file");
-        const mediaFile = await res.json();
+          },
+          (percent) => {
+            setUploadProgress(percent);
+          }
+        );
 
         setMediaList(prev => [...prev, {
           id: mediaFile.id,
@@ -143,8 +175,19 @@ export function CreatePost() {
     reader.readAsDataURL(file);
   };
 
-  const removeMedia = (mediaId: number) => {
-    setMediaList(prev => prev.filter(m => m.id !== mediaId));
+  const removeMedia = async (mediaId: number) => {
+    try {
+      setMediaList(prev => prev.filter(m => m.id !== mediaId));
+      await fetch(getApiUrl(`/api/workspaces/${workspaceId}/media/${mediaId}`), {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("socialflow_auth_token")}`
+        }
+      });
+      toast.success("File deleted successfully!");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSubmit = () => {
@@ -208,7 +251,18 @@ export function CreatePost() {
                   className="mt-2 border-2 border-dashed border-border rounded-lg p-8 text-center text-muted-foreground hover:bg-secondary/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-2"
                 >
                   {isUploading ? (
-                    <span className="text-sm font-semibold animate-pulse text-primary">Uploading your file...</span>
+                    <div className="w-full max-w-xs space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-between items-center text-sm font-semibold text-primary">
+                        <span>Uploading file...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-secondary h-2.5 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
                   ) : (
                     <>
                       <ImageIcon className="w-8 h-8 text-muted-foreground" />

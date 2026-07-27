@@ -68,6 +68,7 @@ router.post("/workspaces/:workspaceId/media", requireAuth, async (req: Authentic
       filename: parsed.data.filename,
       sizeBytes: ikData.size || parsed.data.sizeBytes,
       mimeType: parsed.data.mimeType,
+      fileId: ikData.fileId,
     });
 
     res.status(201).json(file);
@@ -82,10 +83,33 @@ router.delete("/workspaces/:workspaceId/media/:id", requireAuth, async (req: Aut
     res.status(400).json({ error: params.error.message });
     return;
   }
-  await mediaFilesTable.deleteOne({
+
+  // Find the file first to get its ImageKit fileId
+  const file = await mediaFilesTable.findOne({
     id: params.data.id,
     workspaceId: params.data.workspaceId
   });
+
+  if (file) {
+    if (file.fileId) {
+      try {
+        const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || "private_q34ikaQJf2j1Frf6WPMDoDJ+5cU=";
+        const authHeader = "Basic " + Buffer.from(privateKey + ":").toString("base64");
+        
+        await fetch(`https://api.imagekit.io/v1/files/${file.fileId}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": authHeader
+          }
+        });
+      } catch (err) {
+        console.error("Failed to delete file from ImageKit:", err);
+      }
+    }
+    
+    await mediaFilesTable.deleteOne({ _id: file._id });
+  }
+
   res.sendStatus(204);
 });
 

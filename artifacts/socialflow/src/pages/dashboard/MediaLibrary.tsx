@@ -1,15 +1,36 @@
-import { useListMedia, useListWorkspaces } from "@workspace/api-client-react";
+import { useListMedia, useListWorkspaces, useDeleteMedia } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Image as ImageIcon, FileVideo, MoreVertical, Trash, Eye } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function MediaLibrary() {
+  const queryClient = useQueryClient();
   const { data: workspaces } = useListWorkspaces();
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: media, isLoading } = useListMedia(workspaceId!, {
     query: { enabled: !!workspaceId }
   });
+
+  const deleteMediaMutation = useDeleteMedia({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/workspaces/${workspaceId}/media`]
+        });
+      },
+      onError: (err: any) => {
+        alert(err.message || "Failed to delete file");
+      }
+    }
+  });
+
+  const handleDelete = (id: number) => {
+    if (confirm("Are you sure you want to delete this media file from storage?")) {
+      deleteMediaMutation.mutate({ workspaceId: workspaceId!, id });
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -53,7 +74,7 @@ export function MediaLibrary() {
                 )}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button size="icon" variant="secondary" className="w-8 h-8"><Eye className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="destructive" className="w-8 h-8"><Trash className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="destructive" onClick={() => handleDelete(file.id)} disabled={deleteMediaMutation.isPending} className="w-8 h-8"><Trash className="w-4 h-4" /></Button>
                 </div>
               </div>
               <CardContent className="p-3">
