@@ -10,4 +10,5 @@ export * from "./notifications";
 export * from "./ai-logs";
 export * from "./platform-configs";
 export * from "./admin";
+export * from "./bulk-automation";
 

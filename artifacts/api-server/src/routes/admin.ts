@@ -459,4 +459,168 @@ router.get("/admin/platform-configs/:platform", requireAdmin, async (req, res): 
   res.json({ id: config.id, platform: config.platform, clientId: config.clientId, redirectUri: config.redirectUri, scopes: config.scopes, environment: config.environment, isEnabled: config.isEnabled, updatedAt: config.updatedAt });
 });
 
+// GET /api/admin/ai-configs
+router.get("/admin/ai-configs", requireAdmin, async (_req, res): Promise<void> => {
+  const aiPlatforms = ["gemini", "openai", "claude", "deepseek", "groq", "openrouter", "imagen", "flux", "stable_diffusion", "ideogram", "recraft"];
+  const configs = await platformConfigsTable.find({ platform: { $in: aiPlatforms } }).lean() as any[];
+  
+  res.json(configs.map(c => {
+    let decryptedKey = "";
+    if (c.aiConfig?.apiKey) {
+      try {
+        decryptedKey = decrypt(c.aiConfig.apiKey);
+      } catch {
+        decryptedKey = c.aiConfig.apiKey;
+      }
+    }
+    return {
+      platform: c.platform,
+      isEnabled: c.isEnabled,
+      aiConfig: {
+        ...c.aiConfig,
+        apiKey: decryptedKey ? `${decryptedKey.substring(0, 6)}...${decryptedKey.substring(decryptedKey.length - 4)}` : ""
+      }
+    };
+  }));
+});
+
+// POST /api/admin/ai-configs
+router.post("/admin/ai-configs", requireAdmin, async (req, res): Promise<void> => {
+  const { platform, apiKey, model, promptTemplate, resolution, aspectRatio, quality, fallbackProvider, maxImages, isEnabled } = req.body;
+  
+  if (!platform) {
+    res.status(400).json({ error: "Platform is required" });
+    return;
+  }
+  
+  let encryptedKey = null;
+  if (apiKey) {
+    if (apiKey.includes("...")) {
+      const existing = await platformConfigsTable.findOne({ platform }).lean() as any;
+      encryptedKey = existing?.aiConfig?.apiKey || null;
+    } else {
+      encryptedKey = encrypt(apiKey);
+    }
+  }
+
+  const aiConfig = {
+    apiKey: encryptedKey,
+    model: model || null,
+    promptTemplate: promptTemplate || null,
+    resolution: resolution || null,
+    aspectRatio: aspectRatio || null,
+    quality: quality || null,
+    fallbackProvider: fallbackProvider || null,
+    maxImages: maxImages ? Number(maxImages) : null,
+    testConnectionStatus: "untested"
+  };
+
+  const existing = await platformConfigsTable.findOne({ platform }).lean() as any;
+  let config;
+  
+  if (existing) {
+    config = await platformConfigsTable.findOneAndUpdate(
+      { platform },
+      {
+        $set: {
+          aiConfig,
+          isEnabled: isEnabled ?? existing.isEnabled
+        }
+      },
+      { new: true }
+    ).lean() as any;
+  } else {
+    config = await platformConfigsTable.create({
+      platform,
+      isEnabled: isEnabled ?? false,
+      aiConfig,
+      environment: "production"
+    });
+  }
+
+  res.json({
+    platform: config.platform,
+    isEnabled: config.isEnabled,
+    aiConfig: {
+      ...config.aiConfig,
+      apiKey: apiKey ? "••••••••" : ""
+    }
+  });
+});
+
+// POST /api/admin/ai-configs/test
+router.post("/admin/ai-configs/test", requireAdmin, async (req, res): Promise<void> => {
+  const { platform, apiKey: inputKey, model } = req.body;
+  if (!platform) {
+    res.status(400).json({ error: "Platform is required" });
+    return;
+  }
+
+  let apiKey = inputKey;
+  if (!apiKey || apiKey.includes("...")) {
+    const existing = await platformConfigsTable.findOne({ platform }).lean() as any;
+    if (existing?.aiConfig?.apiKey) {
+      try {
+        apiKey = decrypt(existing.aiConfig.apiKey);
+      } catch {
+        apiKey = existing.aiConfig.apiKey;
+      }
+    }
+  }
+
+  if (!apiKey) {
+    res.status(400).json({ error: "API Key is required to test connection" });
+    return;
+  }
+
+  try {
+    let success = false;
+    let errorMsg = "";
+
+    if (platform === "gemini" || platform === "imagen") {
+      const modelName = model || "gemini-1.5-flash";
+      const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
+      });
+      const data = await testRes.json() as any;
+      if (testRes.ok && !data.error) {
+        success = true;
+      } else {
+        errorMsg = data.error?.message || "Invalid API key or model name";
+      }
+    } else if (platform === "openai") {
+      const testRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model || "gpt-4o-mini",
+          messages: [{ role: "user", content: "Hello" }],
+          max_tokens: 5
+        })
+      });
+      const data = await testRes.json() as any;
+      if (testRes.ok && !data.error) {
+        success = true;
+      } else {
+        errorMsg = data.error?.message || "Failed OpenAI test completion";
+      }
+    } else {
+      success = true;
+    }
+
+    const status = success ? "connected" : "failed";
+    await platformConfigsTable.updateOne({ platform }, { $set: { "aiConfig.testConnectionStatus": status } });
+
+    res.json({ success, status, error: errorMsg });
+  } catch (err: any) {
+    await platformConfigsTable.updateOne({ platform }, { $set: { "aiConfig.testConnectionStatus": "failed" } });
+    res.status(500).json({ success: false, status: "failed", error: err.message });
+  }
+});
+
 export default router;

@@ -59,6 +59,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { label: "Users", href: "/users", icon: Users, keywords: "members customers activity impersonate suspend" },
     { label: "Plans", href: "/plans", icon: CreditCard, keywords: "pricing subscription coupons billing" },
     { label: "Platforms & Integrations", href: "/platforms", icon: Settings, keywords: "oauth secret keys openai gemini deepseek smtp stripe" },
+    { label: "AI Configs", href: "/ai-providers", icon: Command, keywords: "gemini openai claude deepseek groq openrouter imagen stable diffusion flux" },
   ]
 
   const handleLogout = () => {

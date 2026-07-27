@@ -25,12 +25,14 @@ import { Analytics } from "./pages/dashboard/Analytics";
 import { Billing } from "./pages/dashboard/Billing";
 import { Team } from "./pages/dashboard/Team";
 import { Settings } from "./pages/dashboard/Settings";
+import { BulkUpload } from "./pages/dashboard/BulkUpload";
 
 // Admin Pages
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminUsers } from "./pages/admin/AdminUsers";
 import { AdminPlans } from "./pages/admin/AdminPlans";
 import { AdminPlatforms } from "./pages/admin/AdminPlatforms";
+import { AdminAiProviders } from "./pages/admin/AdminAiProviders";
 
 // New Public Pages
 import { FeaturesPage } from "./pages/FeaturesPage";
@@ -72,6 +74,7 @@ function Router() {
             <Route path="/users" component={AdminUsers} />
             <Route path="/plans" component={AdminPlans} />
             <Route path="/platforms" component={AdminPlatforms} />
+            <Route path="/ai-providers" component={AdminAiProviders} />
             <Route component={NotFound} />
           </Switch>
         </AdminLayout>
@@ -81,6 +84,7 @@ function Router() {
       <Route path="/dashboard" component={() => <DashboardLayout><Dashboard /></DashboardLayout>} />
       <Route path="/accounts" component={() => <DashboardLayout><Accounts /></DashboardLayout>} />
       <Route path="/create" component={() => <DashboardLayout><CreatePost /></DashboardLayout>} />
+      <Route path="/bulk-upload" component={() => <DashboardLayout><BulkUpload /></DashboardLayout>} />
       <Route path="/ai/studio" component={() => <DashboardLayout><AiStudio /></DashboardLayout>} />
       <Route path="/posts" component={() => <DashboardLayout><Posts /></DashboardLayout>} />
       <Route path="/calendar" component={() => <DashboardLayout><Calendar /></DashboardLayout>} />

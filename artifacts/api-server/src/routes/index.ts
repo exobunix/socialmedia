@@ -12,6 +12,7 @@ import notificationsRouter from "./notifications";
 import aiRouter from "./ai";
 import adminRouter from "./admin";
 import oauthRouter from "./oauth";
+import bulkAutomationRouter from "./bulk-automation";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(notificationsRouter);
 router.use(aiRouter);
 router.use(adminRouter);
 router.use(oauthRouter);
+router.use(bulkAutomationRouter);
 
 export default router;

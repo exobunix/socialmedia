@@ -9,12 +9,13 @@ import {
   Sparkles, 
   ListOrdered, 
   Calendar as CalendarIcon, 
-  Image as ImageIcon, 
+  Image as  ImageIcon, 
   BarChart2, 
   CreditCard, 
   Settings, 
   HelpCircle,
-  LogOut
+  LogOut,
+  FolderUp
 } from "lucide-react"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "Social Accounts", href: "/accounts", icon: Share2 },
     { label: "Create Content", href: "/create", icon: PenSquare },
+    { label: "Bulk Automation", href: "/bulk-upload", icon: FolderUp },
     { label: "AI Studio", href: "/ai/studio", icon: Sparkles },
     { label: "Posts", href: "/posts", icon: ListOrdered },
     { label: "Calendar", href: "/calendar", icon: CalendarIcon },
