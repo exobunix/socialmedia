@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useListWorkspaces, useCreatePost } from "@workspace/api-client-react";
+import { useState, useRef, useEffect } from "react";
+import { useListWorkspaces, useCreatePost, useListSocialAccounts } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select-native";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { X, Image as ImageIcon, Video, Film } from "lucide-react";
+import { X, Image as ImageIcon, Video, Film, Users } from "lucide-react";
 
 interface UploadedMedia {
   id: number;
@@ -22,6 +22,10 @@ export function CreatePost() {
   const workspaceId = workspaces?.[0]?.id;
   const createPost = useCreatePost();
 
+  const { data: accounts } = useListSocialAccounts(workspaceId!, {
+    query: { enabled: !!workspaceId }
+  });
+
   const getApiUrl = (urlPath: string) => {
     const baseUrl = import.meta.env.VITE_API_URL || "";
     return `${baseUrl.replace(/\/+$/, "")}${urlPath}`;
@@ -31,10 +35,18 @@ export function CreatePost() {
   const [content, setContent] = useState("");
   const [tone, setTone] = useState("professional");
   const [status, setStatus] = useState("draft");
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["x"]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [mediaList, setMediaList] = useState<UploadedMedia[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const connectedPlatforms = accounts ? accounts.map(a => a.platform) : [];
+
+  useEffect(() => {
+    if (connectedPlatforms.length > 0 && selectedPlatforms.length === 0) {
+      setSelectedPlatforms([connectedPlatforms[0]]);
+    }
+  }, [accounts]);
 
   const togglePlatform = (platform: string) => {
     if (selectedPlatforms.includes(platform)) {
@@ -305,38 +317,91 @@ export function CreatePost() {
             <CardContent className="p-6 space-y-4">
               <div>
                 <Label className="mb-2 block">Platforms</Label>
-                <div className="flex flex-wrap gap-2">
-                  <div 
-                    onClick={() => togglePlatform("x")}
-                    className={`px-3 py-1.5 border rounded-md text-sm cursor-pointer select-none transition-all ${
-                      selectedPlatforms.includes("x") 
-                        ? "bg-primary/10 text-primary border-primary/20 font-bold" 
-                        : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
-                    }`}
-                  >
-                    X (Twitter)
+                {connectedPlatforms.length === 0 ? (
+                  <div className="text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 p-3 rounded-md">
+                    No connected accounts found. Please connect your YouTube Channel or other accounts first in the <strong>Social Accounts</strong> tab.
                   </div>
-                  <div 
-                    onClick={() => togglePlatform("linkedin")}
-                    className={`px-3 py-1.5 border rounded-md text-sm cursor-pointer select-none transition-all ${
-                      selectedPlatforms.includes("linkedin") 
-                        ? "bg-primary/10 text-primary border-primary/20 font-bold" 
-                        : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
-                    }`}
-                  >
-                    LinkedIn
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {accounts?.map(acc => {
+                      const platformNames: Record<string, string> = {
+                        x: "X (Twitter)",
+                        facebook: "Facebook Page",
+                        instagram: "Instagram Business",
+                        linkedin: "LinkedIn Company",
+                        youtube: "YouTube Channel",
+                        tiktok: "TikTok Business"
+                      };
+                      const name = platformNames[acc.platform] || acc.platform;
+                      const isSelected = selectedPlatforms.includes(acc.platform);
+                      
+                      return (
+                        <div 
+                          key={acc.id}
+                          onClick={() => togglePlatform(acc.platform)}
+                          className={`px-3 py-1.5 border rounded-md text-xs cursor-pointer select-none transition-all ${
+                            isSelected 
+                              ? "bg-primary/10 text-primary border-primary/20 font-bold" 
+                              : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
+                          }`}
+                        >
+                          {name}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div 
-                    onClick={() => togglePlatform("youtube")}
-                    className={`px-3 py-1.5 border rounded-md text-sm cursor-pointer select-none transition-all ${
-                      selectedPlatforms.includes("youtube") 
-                        ? "bg-primary/10 text-primary border-primary/20 font-bold" 
-                        : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
-                    }`}
-                  >
-                    YouTube
+                )}
+
+                {/* Real-time YouTube upload preview */}
+                {selectedPlatforms.includes("youtube") && (
+                  <div className="mt-4 border border-border rounded-lg bg-card overflow-hidden text-left">
+                    <div className="px-3 py-1.5 border-b border-border bg-muted/40 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      YouTube Upload Preview
+                    </div>
+                    <div className="p-3 space-y-3">
+                      <div className="aspect-video w-full rounded bg-slate-900 flex items-center justify-center relative overflow-hidden">
+                        {mediaList.length > 0 ? (
+                          mediaList[0].type === "video" ? (
+                            <video src={mediaList[0].url} className="w-full h-full object-cover" controls />
+                          ) : (
+                            <img src={mediaList[0].url} className="w-full h-full object-cover" alt="Preview" />
+                          )
+                        ) : (
+                          <div className="text-center text-muted-foreground flex flex-col items-center gap-1.5">
+                            <Video className="w-8 h-8 text-primary animate-pulse" />
+                            <span className="text-[10px]">No video attached yet</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-7 h-7 rounded-full bg-secondary overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {accounts?.find(a => a.platform === "youtube")?.profileImageUrl ? (
+                            <img 
+                              src={accounts.find(a => a.platform === "youtube")!.profileImageUrl!} 
+                              alt="Avatar" 
+                              className="w-full h-full object-cover" 
+                            />
+                          ) : (
+                            <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="space-y-0.5 overflow-hidden">
+                          <h4 className="font-semibold text-xs line-clamp-2 text-foreground">
+                            {content.substring(0, 100) || "Video Title (first 100 characters of post content...)"}
+                          </h4>
+                          <div className="text-[10px] text-muted-foreground flex flex-col">
+                            <span className="font-medium text-foreground/80">
+                              {accounts?.find(a => a.platform === "youtube") ? `@${accounts.find(a => a.platform === "youtube")!.username}` : "@Channel"}
+                            </span>
+                            <span className="line-clamp-2 mt-1 leading-normal text-muted-foreground/90">
+                              {content || "Description goes here..."}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div>

@@ -54,18 +54,26 @@ export async function publishPostToYouTube(postId: number, workspaceId: number):
   }
 
   const mediaUrl = post.mediaUrls[0];
-  if (!mediaUrl.startsWith("data:video/")) {
-    await postsTable.updateOne({ id: postId }, { $set: { status: "failed" } });
-    throw new Error("YouTube only supports video file uploads. Please attach a video.");
-  }
+  let videoBuffer: Buffer;
+  let mimeType = "video/mp4";
 
   try {
-    // Extract base64 and mime type
-    const matches = mediaUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!matches) throw new Error("Invalid video data format.");
-    const mimeType = matches[1];
-    const base64Data = matches[2];
-    const videoBuffer = Buffer.from(base64Data, "base64");
+    if (mediaUrl.startsWith("data:video/")) {
+      const matches = mediaUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!matches) throw new Error("Invalid video data format.");
+      mimeType = matches[1];
+      const base64Data = matches[2];
+      videoBuffer = Buffer.from(base64Data, "base64");
+    } else if (mediaUrl.startsWith("http")) {
+      console.log("Downloading video from CDN URL:", mediaUrl);
+      const downloadRes = await fetch(mediaUrl);
+      if (!downloadRes.ok) throw new Error("Failed to download video from CDN URL");
+      mimeType = downloadRes.headers.get("content-type") || "video/mp4";
+      videoBuffer = Buffer.from(await downloadRes.arrayBuffer());
+    } else {
+      await postsTable.updateOne({ id: postId }, { $set: { status: "failed" } });
+      throw new Error("YouTube only supports video file uploads. Please attach a video.");
+    }
 
     const uploadVideo = async (token: string): Promise<any> => {
       const boundary = "314159265358979323846";
