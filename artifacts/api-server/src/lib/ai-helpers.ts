@@ -29,126 +29,136 @@ function getSanitizedModel(provider: string, model: string): string {
   return model;
 }
 
-// 1. Get the first active enabled text provider
-export async function getActiveTextProvider() {
+// 1. Get all active enabled text providers
+export async function getActiveTextProviders() {
   const providers = ["gemini", "openai", "claude", "groq"];
+  const list = [];
   for (const p of providers) {
     const config = await platformConfigsTable.findOne({ platform: p, isEnabled: true }).lean() as any;
     if (config?.aiConfig?.apiKey) {
       try {
         const apiKey = decrypt(config.aiConfig.apiKey);
-        return {
+        list.push({
           provider: p,
           apiKey,
           model: getSanitizedModel(p, config.aiConfig.model),
           promptTemplate: config.aiConfig.promptTemplate || ""
-        };
+        });
       } catch (err) {
         console.error(`Failed to decrypt API key for ${p}:`, err);
       }
     }
   }
-  return null;
+  return list;
 }
 
-// 2. Call active text generator (Gemini, Claude, Groq, OpenAI)
+// 2. Call active text generator (Gemini, Claude, Groq, OpenAI) with automatic fallback
 export async function callAiTextProvider(prompt: string, isJson = false): Promise<string> {
-  const provider = await getActiveTextProvider();
-  if (!provider) {
+  const providers = await getActiveTextProviders();
+  if (providers.length === 0) {
     throw new Error("No active AI Text Provider is configured and enabled in the Admin Panel.");
   }
 
-  const { provider: name, apiKey, model, promptTemplate } = provider;
-  const finalPrompt = promptTemplate ? `${promptTemplate}\n\n${prompt}` : prompt;
+  let lastError: any = null;
+  for (const provider of providers) {
+    const { provider: name, apiKey, model, promptTemplate } = provider;
+    const finalPrompt = promptTemplate ? `${promptTemplate}\n\n${prompt}` : prompt;
 
-  console.log(`Routing text generation to provider: ${name} (${model})`);
+    console.log(`Routing text generation to provider: ${name} (${model})`);
 
-  if (name === "gemini") {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: finalPrompt }] }],
-        generationConfig: isJson ? { responseMimeType: "application/json" } : undefined
-      })
-    });
-    const data = await res.json() as any;
-    if (!res.ok || data.error) {
-      throw new Error(data.error?.message || `Gemini API returned status ${res.status}`);
+    try {
+      if (name === "gemini") {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: finalPrompt }] }],
+            generationConfig: isJson ? { responseMimeType: "application/json" } : undefined
+          })
+        });
+        const data = await res.json() as any;
+        if (!res.ok || data.error) {
+          throw new Error(data.error?.message || `Gemini API returned status ${res.status}`);
+        }
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("Gemini returned empty response candidates");
+        return text;
+      }
+
+      if (name === "openai") {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: "user", content: finalPrompt }],
+            response_format: isJson ? { type: "json_object" } : undefined
+          })
+        });
+        const data = await res.json() as any;
+        if (!res.ok || data.error) {
+          throw new Error(data.error?.message || `OpenAI API returned status ${res.status}`);
+        }
+        const text = data.choices?.[0]?.message?.content;
+        if (!text) throw new Error("OpenAI returned empty completions content");
+        return text;
+      }
+
+      if (name === "claude") {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 1024,
+            messages: [{ role: "user", content: finalPrompt }]
+          })
+        });
+        const data = await res.json() as any;
+        if (!res.ok || data.error) {
+          throw new Error(data.error?.message || `Claude API returned status ${res.status}`);
+        }
+        const text = data.content?.[0]?.text;
+        if (!text) throw new Error("Claude returned empty content blocks");
+        return text;
+      }
+
+      if (name === "groq") {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: "user", content: finalPrompt }],
+            response_format: isJson ? { type: "json_object" } : undefined
+          })
+        });
+        const data = await res.json() as any;
+        if (!res.ok || data.error) {
+          throw new Error(data.error?.message || `Groq API returned status ${res.status}`);
+        }
+        const text = data.choices?.[0]?.message?.content;
+        if (!text) throw new Error("Groq returned empty chat completion");
+        return text;
+      }
+    } catch (err: any) {
+      console.warn(`Provider ${name} failed:`, err.message || err);
+      lastError = err;
+      // Continue loop to try next provider
     }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("Gemini returned empty response candidates");
-    return text;
   }
 
-  if (name === "openai") {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: finalPrompt }],
-        response_format: isJson ? { type: "json_object" } : undefined
-      })
-    });
-    const data = await res.json() as any;
-    if (!res.ok || data.error) {
-      throw new Error(data.error?.message || `OpenAI API returned status ${res.status}`);
-    }
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) throw new Error("OpenAI returned empty completions content");
-    return text;
-  }
-
-  if (name === "claude") {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1024,
-        messages: [{ role: "user", content: finalPrompt }]
-      })
-    });
-    const data = await res.json() as any;
-    if (!res.ok || data.error) {
-      throw new Error(data.error?.message || `Claude API returned status ${res.status}`);
-    }
-    const text = data.content?.[0]?.text;
-    if (!text) throw new Error("Claude returned empty content blocks");
-    return text;
-  }
-
-  if (name === "groq") {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: finalPrompt }],
-        response_format: isJson ? { type: "json_object" } : undefined
-      })
-    });
-    const data = await res.json() as any;
-    if (!res.ok || data.error) {
-      throw new Error(data.error?.message || `Groq API returned status ${res.status}`);
-    }
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) throw new Error("Groq returned empty chat completion");
-    return text;
-  }
-
-  throw new Error(`Unsupported text provider: ${name}`);
+  throw new Error(`All configured AI Text Providers failed. Last error: ${lastError?.message || lastError}`);
 }
 
 // 3. Call active image generator (DALL-E 3 on OpenAI, or Imagen on Gemini)

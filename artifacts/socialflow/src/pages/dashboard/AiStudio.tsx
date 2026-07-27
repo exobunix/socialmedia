@@ -43,6 +43,7 @@ export function AiStudio() {
   // Image Generator State
   const [imagePrompt, setImagePrompt] = useState("");
   const [generatedImageUrl, setGeneratedImageUrl] = useState("");
+  const [imageStyle, setImageStyle] = useState("realistic");
   const [imageLoading, setImageLoading] = useState(false);
 
   const generateAiImage = useGenerateAiImage();
@@ -111,7 +112,7 @@ export function AiStudio() {
     setGeneratedImageUrl("");
 
     generateAiImage.mutate({
-      data: { prompt: imagePrompt }
+      data: { prompt: imagePrompt, style: imageStyle as any }
     }, {
       onSuccess: (data) => {
         setGeneratedImageUrl(data.imageUrl);
@@ -364,6 +365,17 @@ export function AiStudio() {
                       placeholder="E.g., A modern high-tech office desk with neon lights, 3D style illustration, professional lighting, social media friendly..."
                       className="min-h-[150px] bg-background/50"
                     />
+                  </div>
+
+                  <div>
+                    <Label className="mb-2 block font-semibold text-xs text-muted-foreground">Visual Style</Label>
+                    <Select value={imageStyle} onChange={(e) => setImageStyle(e.target.value)}>
+                      <option value="realistic">Realistic</option>
+                      <option value="cartoon">Cartoon</option>
+                      <option value="artistic">Artistic</option>
+                      <option value="minimalist">Minimalist</option>
+                      <option value="branded">Branded</option>
+                    </Select>
                   </div>
 
                   <div className="pt-4 mt-auto">

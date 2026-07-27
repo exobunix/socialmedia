@@ -1023,7 +1023,7 @@ export const RewriteContentResponse = zod.object({
  */
 export const GenerateAiImageBody = zod.object({
   "prompt": zod.string(),
-  "style": zod.enum(['realistic', 'cartoon', 'artistic', 'minimalist', 'branded']),
+  "style": zod.enum(['realistic', 'cartoon', 'artistic', 'minimalist', 'branded']).optional(),
   "aspectRatio": zod.enum(['1:1', '16:9', '9:16', '4:5']).optional()
 })
 
