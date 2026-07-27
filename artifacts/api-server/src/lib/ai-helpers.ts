@@ -1,4 +1,11 @@
 import { platformConfigsTable, decrypt } from "@workspace/db";
+import dns from "dns";
+
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch (e) {
+  console.warn("Failed to set custom DNS servers globally:", e);
+}
 
 function getDefaultModel(provider: string): string {
   switch (provider) {
