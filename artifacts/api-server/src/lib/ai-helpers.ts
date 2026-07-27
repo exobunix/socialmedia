@@ -165,7 +165,7 @@ export async function callAiTextProvider(prompt: string, isJson = false): Promis
 export async function callAiImageProvider(prompt: string): Promise<string> {
   // Check image providers: openai (dall-e), gemini (imagen), flux (huggingface), stable_diffusion (huggingface)
   const openaiConfig = await platformConfigsTable.findOne({ platform: "openai", isEnabled: true }).lean() as any;
-  const geminiConfig = await platformConfigsTable.findOne({ platform: "gemini", isEnabled: true }).lean() as any;
+  const geminiConfig = await platformConfigsTable.findOne({ platform: "imagen", isEnabled: true }).lean() as any;
   const fluxConfig = await platformConfigsTable.findOne({ platform: "flux", isEnabled: true }).lean() as any;
   const sdConfig = await platformConfigsTable.findOne({ platform: "stable_diffusion", isEnabled: true }).lean() as any;
 
