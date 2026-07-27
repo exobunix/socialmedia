@@ -224,7 +224,10 @@ export async function callAiImageProvider(prompt: string): Promise<string> {
   if (geminiConfig?.aiConfig?.apiKey) {
     try {
       const apiKey = decrypt(geminiConfig.aiConfig.apiKey);
-      const model = geminiConfig.aiConfig.model || "imagen-3.0-generate-002";
+      let model = geminiConfig.aiConfig.model || "imagen-3.0-generate-002";
+      if (!model.trim().toLowerCase().startsWith("imagen-")) {
+        model = "imagen-3.0-generate-002";
+      }
       console.log(`Routing image generation to Gemini Imagen (${model})`);
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`, {
         method: "POST",
