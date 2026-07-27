@@ -5,7 +5,7 @@ function getDefaultModel(provider: string): string {
     case "gemini": return "gemini-1.5-flash";
     case "openai": return "gpt-4o-mini";
     case "claude": return "claude-3-5-sonnet-latest";
-    case "groq": return "llama3-8b-8192";
+    case "groq": return "llama-3.1-8b-instant";
     default: return "default";
   }
 }
@@ -24,7 +24,7 @@ function getSanitizedModel(provider: string, model: string): string {
     return "claude-3-5-sonnet-latest";
   }
   if (provider === "groq" && !m.startsWith("llama") && !m.startsWith("mixtral") && !m.startsWith("gemma")) {
-    return "llama3-8b-8192";
+    return "llama-3.1-8b-instant";
   }
   return model;
 }
