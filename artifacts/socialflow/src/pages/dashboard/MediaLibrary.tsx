@@ -10,7 +10,10 @@ export function MediaLibrary() {
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: media, isLoading } = useListMedia(workspaceId!, {
-    query: { enabled: !!workspaceId }
+    query: {
+      queryKey: ["media", workspaceId],
+      enabled: !!workspaceId
+    }
   });
 
   const deleteMediaMutation = useDeleteMedia({

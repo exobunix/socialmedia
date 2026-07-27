@@ -11,7 +11,10 @@ export function Accounts() {
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: accounts, isLoading } = useListSocialAccounts(workspaceId!, {
-    query: { enabled: !!workspaceId }
+    query: {
+      queryKey: ["social-accounts", workspaceId],
+      enabled: !!workspaceId
+    }
   });
 
   const disconnectMutation = useDisconnectSocialAccount({

@@ -7,7 +7,10 @@ export function Analytics() {
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: stats, isLoading } = useGetAnalyticsSummary(workspaceId!, {
-    query: { enabled: !!workspaceId }
+    query: {
+      queryKey: ["analytics", workspaceId],
+      enabled: !!workspaceId
+    }
   });
 
   if (isLoading) return <div>Loading analytics...</div>;

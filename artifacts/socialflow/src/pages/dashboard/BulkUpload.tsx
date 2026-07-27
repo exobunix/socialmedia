@@ -48,7 +48,10 @@ export function BulkUpload() {
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: accounts } = useListSocialAccounts(workspaceId!, {
-    query: { enabled: !!workspaceId }
+    query: {
+      queryKey: ["social-accounts", workspaceId],
+      enabled: !!workspaceId
+    }
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -424,8 +427,14 @@ export function BulkUpload() {
   };
 
   const handleStartAutomation = async () => {
-    if (!activeBatchId || !workspaceId) return toast.error("Please upload files first");
-    if (selectedPlatforms.length === 0) return toast.error("Please select at least one social account");
+    if (!activeBatchId || !workspaceId) {
+      toast.error("Please upload files first");
+      return;
+    }
+    if (selectedPlatforms.length === 0) {
+      toast.error("Please select at least one social account");
+      return;
+    }
 
     try {
       const res = await fetch(getApiUrl(`/api/workspaces/${workspaceId}/bulk-batches/${activeBatchId}/schedule`), {

@@ -9,7 +9,10 @@ export function Dashboard() {
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: dashboard, isLoading } = useGetDashboard(workspaceId!, { 
-    query: { enabled: !!workspaceId } 
+    query: {
+      queryKey: ["dashboard", workspaceId],
+      enabled: !!workspaceId
+    } 
   });
 
   if (isLoading) return <div>Loading dashboard...</div>;

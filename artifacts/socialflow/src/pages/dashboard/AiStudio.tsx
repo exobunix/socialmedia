@@ -58,8 +58,14 @@ export function AiStudio() {
 
   // 1. Caption generation handler
   const handleGenerateCaptions = async () => {
-    if (!captionTopic) return toast.error("Please enter what the post should be about");
-    if (selectedPlatforms.length === 0) return toast.error("Please select at least one platform");
+    if (!captionTopic) {
+      toast.error("Please enter what the post should be about");
+      return;
+    }
+    if (selectedPlatforms.length === 0) {
+      toast.error("Please select at least one platform");
+      return;
+    }
     
     setCaptionLoading(true);
     setCaptionResults({});
@@ -85,7 +91,10 @@ export function AiStudio() {
 
   // 2. Hashtags generation handler
   const handleGenerateHashtags = () => {
-    if (!hashtagTopic) return toast.error("Please enter a topic to extract hashtags");
+    if (!hashtagTopic) {
+      toast.error("Please enter a topic to extract hashtags");
+      return;
+    }
     
     setHashtagLoading(true);
     setHashtagResult("");
@@ -106,7 +115,10 @@ export function AiStudio() {
 
   // 3. Image generation handler
   const handleGenerateImage = () => {
-    if (!imagePrompt) return toast.error("Please describe the image you want to generate");
+    if (!imagePrompt) {
+      toast.error("Please describe the image you want to generate");
+      return;
+    }
     
     setImageLoading(true);
     setGeneratedImageUrl("");
@@ -287,8 +299,7 @@ export function AiStudio() {
                     <Label className="mb-2 block font-semibold text-sm">What topic or keywords do you want hashtags for?</Label>
                     <Textarea 
                       value={hashtagTopic}
-                      onChange={(e) => setTopic(hashtagTopic)} // Keep local sync
-                      onInput={(e: any) => setHashtagTopic(e.target.value)}
+                      onChange={(e) => setHashtagTopic(e.target.value)}
                       placeholder="E.g., React Hooks, SaaS Product Launch, Web Development..."
                       className="min-h-[150px] bg-background/50"
                     />

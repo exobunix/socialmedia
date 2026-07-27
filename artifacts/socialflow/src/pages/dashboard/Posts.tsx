@@ -16,7 +16,10 @@ export function Posts() {
   };
 
   const { data: postsData, isLoading } = useListPosts(workspaceId!, {
-    query: { enabled: !!workspaceId }
+    query: {
+      queryKey: ["posts", workspaceId],
+      enabled: !!workspaceId
+    }
   });
 
   const handlePublishNow = async (postId: number) => {

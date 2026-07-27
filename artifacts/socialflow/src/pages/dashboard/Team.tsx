@@ -14,7 +14,10 @@ export function Team() {
   const workspaceId = workspaces?.[0]?.id;
   
   const { data: teamMembers, isLoading, refetch } = useListTeamMembers(workspaceId!, {
-    query: { enabled: !!workspaceId }
+    query: {
+      queryKey: ["team-members", workspaceId],
+      enabled: !!workspaceId
+    }
   });
 
   const inviteMember = useInviteTeamMember();

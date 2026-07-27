@@ -23,7 +23,10 @@ export function CreatePost() {
   const createPost = useCreatePost();
 
   const { data: accounts } = useListSocialAccounts(workspaceId!, {
-    query: { enabled: !!workspaceId }
+    query: {
+      queryKey: ["social-accounts", workspaceId],
+      enabled: !!workspaceId
+    }
   });
 
   const getApiUrl = (urlPath: string) => {
@@ -203,7 +206,10 @@ export function CreatePost() {
   };
 
   const handleSubmit = () => {
-    if (!content) return toast.error("Content is required");
+    if (!content) {
+      toast.error("Content is required");
+      return;
+    }
     
     // Create as draft first to comply with backend Zod schema restrictions, then trigger publish endpoint
     const postStatus = status === "published" ? "draft" : status;
