@@ -448,21 +448,13 @@ export function Home() {
             </div>
 
             {/* Quick Stats / Info Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="border border-border/60 rounded-xl bg-card/45 p-5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
-                  <Shield className="w-4 h-4" />
-                </div>
-                <div className="text-xl font-bold mb-1">99.9%</div>
-                <div className="text-xs text-muted-foreground font-medium">Platform Uptime</div>
+            <div className="border border-border/60 rounded-xl bg-card/45 p-5 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
               </div>
-
-              <div className="border border-border/60 rounded-xl bg-card/45 p-5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div className="text-xl font-bold mb-1">10k+</div>
-                <div className="text-xs text-muted-foreground font-medium">Active Creators</div>
+              <div>
+                <div className="text-xl font-bold">10k+</div>
+                <div className="text-xs text-muted-foreground font-medium">Active Creators trust SocialFlow AI</div>
               </div>
             </div>
 
