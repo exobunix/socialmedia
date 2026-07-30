@@ -382,39 +382,113 @@ export function Home() {
       </section>
 
       {/* FAQ Accordion Section */}
-      <section className="py-24 max-w-3xl mx-auto w-full px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight mb-3">Frequently Asked Questions</h2>
-          <p className="text-muted-foreground font-medium">Have questions about integrations or trials? We have answers.</p>
-        </div>
-
-        <div className="space-y-4">
-          {faqs.map((faq, idx) => (
-            <div key={idx} className="border border-border/60 rounded-xl bg-card/45 overflow-hidden">
-              <button
-                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                className="w-full flex items-center justify-between p-5 font-bold text-left hover:bg-card/90 transition-colors text-sm md:text-base"
-              >
-                <span>{faq.q}</span>
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${activeFaq === idx ? "rotate-180" : ""}`} />
-              </button>
-              
-              <AnimatePresence initial={false}>
-                {activeFaq === idx && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="p-5 pt-0 text-xs md:text-sm text-muted-foreground leading-relaxed border-t border-border/40 font-medium bg-card/20">
-                      {faq.a}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+      <section className="py-24 max-w-6xl mx-auto w-full px-6 z-10 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          
+          {/* Left Column: Title & FAQ Accordion */}
+          <div className="lg:col-span-7 space-y-8">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">Frequently Asked Questions</h2>
+              <p className="text-muted-foreground font-medium">Have questions about integrations, billing, or features? We've got you covered.</p>
             </div>
-          ))}
+
+            <div className="space-y-4">
+              {faqs.map((faq, idx) => (
+                <div key={idx} className="border border-border/60 rounded-xl bg-card/45 overflow-hidden">
+                  <button
+                    onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                    className="w-full flex items-center justify-between p-5 font-bold text-left hover:bg-card/90 transition-colors text-sm md:text-base"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${activeFaq === idx ? "rotate-180" : ""}`} />
+                  </button>
+                  
+                  <AnimatePresence initial={false}>
+                    {activeFaq === idx && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="p-5 pt-0 text-xs md:text-sm text-muted-foreground leading-relaxed border-t border-border/40 font-medium bg-card/20">
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column: Additional Content */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Help Card */}
+            <div className="border border-primary/20 rounded-2xl bg-gradient-to-br from-primary/5 via-purple-500/5 to-transparent p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-6 -mt-6"></div>
+              
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              
+              <h3 className="text-xl font-bold mb-3">Still have questions?</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6 font-medium">
+                Can't find the answer you're looking for? Please chat with our friendly team. We're here to help you automate your social workflows.
+              </p>
+              
+              <div className="space-y-3">
+                <Button className="w-full justify-center" size="lg">
+                  Contact Support
+                </Button>
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground font-semibold">Average response time: &lt; 15 mins</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats / Info Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border border-border/60 rounded-xl bg-card/45 p-5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div className="text-xl font-bold mb-1">99.9%</div>
+                <div className="text-xs text-muted-foreground font-medium">Platform Uptime</div>
+              </div>
+
+              <div className="border border-border/60 rounded-xl bg-card/45 p-5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div className="text-xl font-bold mb-1">10k+</div>
+                <div className="text-xs text-muted-foreground font-medium">Active Creators</div>
+              </div>
+            </div>
+
+            {/* Documentation Quick Links */}
+            <div className="border border-border/60 rounded-xl bg-card/45 p-6 space-y-4">
+              <h4 className="font-bold text-sm tracking-wide uppercase text-muted-foreground">Useful Resources</h4>
+              <div className="space-y-3">
+                <a href="#" className="flex items-center justify-between text-sm font-semibold hover:text-primary transition-colors">
+                  <span>Getting Started Guide</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <a href="#" className="flex items-center justify-between text-sm font-semibold hover:text-primary transition-colors border-t border-border/30 pt-3">
+                  <span>API Documentation</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <a href="#" className="flex items-center justify-between text-sm font-semibold hover:text-primary transition-colors border-t border-border/30 pt-3">
+                  <span>System Status</span>
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    All Operational
+                  </span>
+                </a>
+              </div>
+            </div>
+
+          </div>
         </div>
       </section>
 
