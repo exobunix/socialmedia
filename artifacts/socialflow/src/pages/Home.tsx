@@ -92,7 +92,7 @@ export function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 z-10">
+      <section className="relative pt-10 pb-20 md:pt-12 md:pb-28 z-10">
         <div className="container mx-auto px-6 flex flex-col items-center text-center">
           
           <motion.div 
